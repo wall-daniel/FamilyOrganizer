@@ -140,3 +140,4 @@ def delete_recipe(recipe_id):
     if row_count == 0:
         return jsonify({"error": "Recipe not found"}), 404
     return jsonify({"message": "Recipe deleted successfully"})
+
