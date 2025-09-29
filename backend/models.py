@@ -1,4 +1,4 @@
-from backend.database import get_db, row_to_dict
+from database import get_db, row_to_dict
 
 class Task:
     def __init__(self, id=None, title=None, description=None, completed=False):

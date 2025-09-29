@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from backend.models import Task, Meal, Recipe
+from models import Task, Meal, Recipe
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -140,4 +140,3 @@ def delete_recipe(recipe_id):
     if row_count == 0:
         return jsonify({"error": "Recipe not found"}), 404
     return jsonify({"message": "Recipe deleted successfully"})
-
