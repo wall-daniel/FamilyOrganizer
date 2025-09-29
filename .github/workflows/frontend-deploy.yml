@@ -1,0 +1,43 @@
+name: Build and Deploy Frontend to GitHub Pages
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'family_organizer/**' # Trigger only when changes are made in the Flutter app directory
+
+env:
+  FLUTTER_VERSION: '3.10.0' # Specify the Flutter version you are using
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+
+      - name: Get Flutter dependencies
+        run: flutter pub get
+        working-directory: ./family_organizer
+
+      - name: Build Flutter Web
+        run: flutter build web --release --base-href /family-organizer/ # Adjust base-href if your repo name is different
+        working-directory: ./family_organizer
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./family_organizer/build/web
+          # The branch the action should deploy to.
+          # For user/organization pages, it's usually 'master' or 'main'.
+          # For project pages, it's usually 'gh-pages'.
+          # You might need to configure your GitHub Pages settings in your repository.
+          publish_branch: gh_pages
