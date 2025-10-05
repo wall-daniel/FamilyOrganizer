@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from models import Task, Meal, Recipe
 
-bp = Blueprint('api', __name__, url_prefix='/api')
+bp = Blueprint('api', __name__, url_prefix='')
 
 # --- Task Endpoints ---
 @bp.route('/tasks', methods=['GET'])
