@@ -31,10 +31,13 @@ class MealPlanningScreen extends StatelessWidget {
             itemBuilder: (context, index) {
               final day = next7Days[index];
               final mealsForDay = mealService.meals
-                  .where((meal) =>
-                      meal.scheduledDate.year == day.year &&
-                      meal.scheduledDate.month == day.month &&
-                      meal.scheduledDate.day == day.day)
+                  .where((meal) {
+                    final mealDate = DateTime.tryParse(meal.date ?? '');
+                    return mealDate != null &&
+                           mealDate.year == day.year &&
+                           mealDate.month == day.month &&
+                           mealDate.day == day.day;
+                  })
                   .toList();
 
               return MealDayCard(
@@ -54,8 +57,6 @@ class MealPlanningScreen extends StatelessWidget {
   void _showAddMealDialog(
       BuildContext context, MealService mealService, DateTime scheduledDate) {
     final TextEditingController nameController = TextEditingController();
-    final TextEditingController descriptionController = TextEditingController();
-    final TextEditingController ingredientsController = TextEditingController();
 
     Recipe? selectedRecipe; // To hold the selected recipe
 
@@ -88,12 +89,9 @@ class MealPlanningScreen extends StatelessWidget {
                             selectedRecipe = recipe;
                             if (selectedRecipe != null) {
                               nameController.text = selectedRecipe!.name;
-                              descriptionController.text = selectedRecipe!.description;
-                              ingredientsController.text = selectedRecipe!.ingredients.join(', ');
+                              // Removed description and ingredients population
                             } else {
                               nameController.clear();
-                              descriptionController.clear();
-                              ingredientsController.clear();
                             }
                           });
                         },
@@ -104,15 +102,7 @@ class MealPlanningScreen extends StatelessWidget {
                       controller: nameController,
                       decoration: const InputDecoration(labelText: 'Meal Name'),
                     ),
-                    TextField(
-                      controller: descriptionController,
-                      decoration: const InputDecoration(labelText: 'Description'),
-                    ),
-                    TextField(
-                      controller: ingredientsController,
-                      decoration: const InputDecoration(
-                          labelText: 'Ingredients (comma-separated)'),
-                    ),
+                    // Removed description and ingredients TextFields
                   ],
                 ),
               ),
@@ -125,15 +115,9 @@ class MealPlanningScreen extends StatelessWidget {
                   onPressed: () {
                     if (nameController.text.isNotEmpty) {
                       final newMeal = Meal(
-                        id: DateTime.now().toIso8601String(),
                         name: nameController.text,
-                        description: descriptionController.text,
-                        ingredients: ingredientsController.text
-                            .split(',')
-                            .map((e) => e.trim())
-                            .where((e) => e.isNotEmpty)
-                            .toList(),
-                        scheduledDate: scheduledDate,
+                        date: scheduledDate.toIso8601String().split('T').first,
+                        recipeId: selectedRecipe?.id,
                       );
                       mealService.addMeal(newMeal);
                     }

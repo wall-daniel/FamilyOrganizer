@@ -39,13 +39,17 @@ class GroceryListScreen extends StatelessWidget {
                 leading: Checkbox(
                   value: item.isCompleted,
                   onChanged: (bool? value) {
-                    groceryService.toggleItemCompletion(item.id);
+                    if (item.id != null) { // Ensure id is not null
+                      groceryService.toggleItemCompletion(item.id!);
+                    }
                   },
                 ),
                 trailing: IconButton(
                   icon: const Icon(Icons.delete),
                   onPressed: () {
-                    groceryService.removeGroceryItem(item.id);
+                    if (item.id != null) { // Ensure id is not null
+                      groceryService.removeGroceryItem(item.id!);
+                    }
                   },
                 ),
               );
@@ -89,8 +93,9 @@ void _showAddGroceryItemDialog(
             onPressed: () {
               if (nameController.text.isNotEmpty) {
                 final newItem = GroceryItem(
-                  id: DateTime.now().toIso8601String(),
                   name: nameController.text,
+                  quantity: '', // Default quantity
+                  isCompleted: false,
                 );
                 groceryService.addGroceryItem(newItem);
               }

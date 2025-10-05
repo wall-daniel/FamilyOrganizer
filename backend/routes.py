@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
-from models import Task, Meal, Recipe
+from models import Task, Meal, Recipe, GroceryItem
 
-bp = Blueprint('api', __name__, url_prefix='')
+bp = Blueprint('api', __name__, url_prefix='/api')
 
 # --- Task Endpoints ---
 @bp.route('/tasks', methods=['GET'])
@@ -140,3 +140,49 @@ def delete_recipe(recipe_id):
     if row_count == 0:
         return jsonify({"error": "Recipe not found"}), 404
     return jsonify({"message": "Recipe deleted successfully"})
+
+# --- Grocery Item Endpoints ---
+@bp.route('/grocery_items', methods=['GET'])
+def get_grocery_items():
+    items = GroceryItem.all()
+    return jsonify(items)
+
+@bp.route('/grocery_items', methods=['POST'])
+def add_grocery_item():
+    new_item_data = request.json
+    if not new_item_data or 'name' not in new_item_data:
+        return jsonify({"error": "Name is required"}), 400
+    
+    item = GroceryItem.create(
+        name=new_item_data['name'],
+        quantity=new_item_data.get('quantity', ''),
+        is_completed=new_item_data.get('is_completed', False)
+    )
+    return jsonify(item), 201
+
+@bp.route('/grocery_items/<int:item_id>', methods=['GET'])
+def get_grocery_item(item_id):
+    item = GroceryItem.get(item_id)
+    if item:
+        return jsonify(item)
+    return jsonify({"error": "Grocery item not found"}), 404
+
+@bp.route('/grocery_items/<int:item_id>', methods=['PUT'])
+def update_grocery_item(item_id):
+    updated_data = request.json
+    row_count = GroceryItem.update(
+        item_id,
+        name=updated_data.get('name'),
+        quantity=updated_data.get('quantity'),
+        is_completed=updated_data.get('is_completed')
+    )
+    if row_count == 0:
+        return jsonify({"error": "Grocery item not found"}), 404
+    return jsonify({"message": "Grocery item updated successfully"})
+
+@bp.route('/grocery_items/<int:item_id>', methods=['DELETE'])
+def delete_grocery_item(item_id):
+    row_count = GroceryItem.delete(item_id)
+    if row_count == 0:
+        return jsonify({"error": "Grocery item not found"}), 404
+    return jsonify({"message": "Grocery item deleted successfully"})

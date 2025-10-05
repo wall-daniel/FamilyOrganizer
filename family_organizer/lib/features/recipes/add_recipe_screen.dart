@@ -15,14 +15,12 @@ class AddRecipeScreen extends StatefulWidget {
 class _AddRecipeScreenState extends State<AddRecipeScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _ingredientsController = TextEditingController();
   final TextEditingController _instructionsController = TextEditingController();
 
   @override
   void dispose() {
     _nameController.dispose();
-    _descriptionController.dispose();
     _ingredientsController.dispose();
     _instructionsController.dispose();
     super.dispose();
@@ -31,19 +29,13 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
   void _saveRecipe() {
     if (_formKey.currentState!.validate()) {
       final newRecipe = Recipe(
-        id: DateTime.now().toIso8601String(),
         name: _nameController.text,
-        description: _descriptionController.text,
         ingredients: _ingredientsController.text
             .split(',')
             .map((e) => e.trim())
             .where((e) => e.isNotEmpty)
             .toList(),
-        instructions: _instructionsController.text
-            .split('\n')
-            .map((e) => e.trim())
-            .where((e) => e.isNotEmpty)
-            .toList(),
+        instructions: _instructionsController.text, // Instructions is now a single String
       );
       Provider.of<RecipeService>(context, listen: false).addRecipe(newRecipe);
       Navigator.pop(context); // Go back to the recipe list
@@ -76,15 +68,6 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                   }
                   return null;
                 },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 3,
               ),
               const SizedBox(height: 16),
               TextFormField(

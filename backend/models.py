@@ -191,3 +191,67 @@ class Recipe:
         cursor = db.execute('DELETE FROM recipes WHERE id = ?', (recipe_id,))
         db.commit()
         return cursor.rowcount
+
+class GroceryItem:
+    def __init__(self, id=None, name=None, quantity=None, is_completed=False):
+        self.id = id
+        self.name = name
+        self.quantity = quantity
+        self.is_completed = is_completed
+
+    @staticmethod
+    def all():
+        db = get_db()
+        cursor = db.execute('SELECT * FROM grocery_items')
+        return [row_to_dict(row) for row in cursor.fetchall()]
+
+    @staticmethod
+    def get(item_id):
+        db = get_db()
+        cursor = db.execute('SELECT * FROM grocery_items WHERE id = ?', (item_id,))
+        item = cursor.fetchone()
+        return row_to_dict(item) if item else None
+
+    @staticmethod
+    def create(name, quantity='', is_completed=False):
+        db = get_db()
+        cursor = db.execute('INSERT INTO grocery_items (name, quantity, is_completed) VALUES (?, ?, ?)',
+                            (name, quantity, is_completed))
+        db.commit()
+        return {
+            "id": cursor.lastrowid,
+            "name": name,
+            "quantity": quantity,
+            "is_completed": is_completed
+        }
+
+    @staticmethod
+    def update(item_id, name=None, quantity=None, is_completed=None):
+        db = get_db()
+        query_parts = []
+        params = []
+        if name is not None:
+            query_parts.append('name = ?')
+            params.append(name)
+        if quantity is not None:
+            query_parts.append('quantity = ?')
+            params.append(quantity)
+        if is_completed is not None:
+            query_parts.append('is_completed = ?')
+            params.append(is_completed)
+
+        if not query_parts:
+            return 0
+
+        query = 'UPDATE grocery_items SET ' + ', '.join(query_parts) + ' WHERE id = ?'
+        params.append(item_id)
+        cursor = db.execute(query, tuple(params))
+        db.commit()
+        return cursor.rowcount
+
+    @staticmethod
+    def delete(item_id):
+        db = get_db()
+        cursor = db.execute('DELETE FROM grocery_items WHERE id = ?', (item_id,))
+        db.commit()
+        return cursor.rowcount

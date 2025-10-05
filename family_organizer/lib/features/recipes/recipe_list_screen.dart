@@ -36,7 +36,6 @@ class RecipeListScreen extends StatelessWidget {
                     recipe.name,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
-                  subtitle: Text(recipe.description),
                   children: [
                     Padding(
                       padding: const EdgeInsets.all(16.0),
@@ -63,21 +62,18 @@ class RecipeListScreen extends StatelessWidget {
                             style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 8),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: List.generate(recipe.instructions.length, (index) {
-                              return Padding(
-                                padding: const EdgeInsets.only(left: 8.0, bottom: 4.0),
-                                child: Text('${index + 1}. ${recipe.instructions[index]}'),
-                              );
-                            }),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 8.0, bottom: 4.0),
+                            child: Text(recipe.instructions), // Display as single string
                           ),
                           Align(
                             alignment: Alignment.bottomRight,
                             child: IconButton(
                               icon: const Icon(Icons.delete),
                               onPressed: () {
-                                recipeService.removeRecipe(recipe.id);
+                                if (recipe.id != null) { // Ensure id is not null
+                                  recipeService.removeRecipe(recipe.id!);
+                                }
                               },
                             ),
                           ),

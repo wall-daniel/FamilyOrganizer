@@ -1,17 +1,35 @@
 class Recipe {
-  final String id;
+  final int? id;
   String name;
-  String description;
   List<String> ingredients;
-  List<String> instructions;
+  String instructions; // Changed from List<String> to String to match backend
 
   Recipe({
-    required this.id,
+    this.id,
     required this.name,
-    this.description = '',
     this.ingredients = const [],
-    this.instructions = const [],
+    this.instructions = '',
   });
 
-  // Optional: Add methods for serialization/deserialization if needed later
+  factory Recipe.fromJson(Map<String, dynamic> json) {
+    return Recipe(
+      id: json['id'],
+      name: json['name'],
+      ingredients: (json['ingredients'] as String? ?? '')
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList(),
+      instructions: json['instructions'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'ingredients': ingredients.join(', '), // Convert list to comma-separated string
+      'instructions': instructions,
+    };
+  }
 }

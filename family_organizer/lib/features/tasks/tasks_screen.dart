@@ -29,9 +29,18 @@ class TasksScreen extends StatelessWidget {
                 title: Text(task.title),
                 subtitle: Text(task.description),
                 trailing: Checkbox(
-                  value: task.isCompleted,
+                  value: task.completed,
                   onChanged: (bool? value) {
-                    // TODO: Implement task completion toggle
+                    if (task.id != null && value != null) {
+                      taskService.updateTask(
+                        Task(
+                          id: task.id,
+                          title: task.title,
+                          description: task.description,
+                          completed: value,
+                        ),
+                      );
+                    }
                   },
                 ),
                 onTap: () {
@@ -42,19 +51,63 @@ class TasksScreen extends StatelessWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // TODO: Implement adding new task
-          // For now, add a dummy task
-          final newTask = Task(
-            id: DateTime.now().toIso8601String(),
-            title: 'New Task ${DateTime.now().second}',
-            description: 'This is a dummy task.',
+      floatingActionButton: Consumer<TaskService>( // Wrap FAB in its own Consumer
+        builder: (context, taskService, child) {
+          return FloatingActionButton(
+            onPressed: () {
+              _showAddTaskDialog(context, taskService);
+            },
+            child: const Icon(Icons.add),
           );
-          Provider.of<TaskService>(context, listen: false).addTask(newTask);
         },
-        child: const Icon(Icons.add),
       ),
+    );
+  }
+
+  void _showAddTaskDialog(BuildContext context, TaskService taskService) {
+    final TextEditingController titleController = TextEditingController();
+    final TextEditingController descriptionController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Add New Task'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(labelText: 'Task Title'),
+              ),
+              TextField(
+                controller: descriptionController,
+                decoration: const InputDecoration(labelText: 'Description (Optional)'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (titleController.text.isNotEmpty) {
+                  final newTask = Task(
+                    title: titleController.text,
+                    description: descriptionController.text,
+                    completed: false,
+                  );
+                  taskService.addTask(newTask);
+                }
+                Navigator.pop(context);
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

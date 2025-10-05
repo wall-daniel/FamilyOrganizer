@@ -1,17 +1,31 @@
 class Task {
-  final String id;
+  final int? id;
   String title;
   String description;
-  bool isCompleted;
-  DateTime? dueDate;
+  bool completed; // Changed from isCompleted to completed
 
   Task({
-    required this.id,
+    this.id,
     required this.title,
     this.description = '',
-    this.isCompleted = false,
-    this.dueDate,
+    this.completed = false,
   });
 
-  // Optional: Add methods for serialization/deserialization if needed later
+  factory Task.fromJson(Map<String, dynamic> json) {
+    return Task(
+      id: json['id'],
+      title: json['title'],
+      description: json['description'] ?? '',
+      completed: json['completed'] == 1, // SQLite boolean is 0 or 1
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'completed': completed ? 1 : 0, // Convert bool to int for backend
+    };
+  }
 }

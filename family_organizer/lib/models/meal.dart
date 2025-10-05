@@ -1,17 +1,31 @@
 class Meal {
-  final String id;
+  final int? id;
   String name;
-  String description;
-  List<String> ingredients;
-  DateTime scheduledDate; // Date for which the meal is planned
+  String date; // Changed from scheduledDate to date (String)
+  int? recipeId; // Added recipeId to link to recipes
 
   Meal({
-    required this.id,
+    this.id,
     required this.name,
-    this.description = '',
-    this.ingredients = const [],
-    required this.scheduledDate,
+    required this.date,
+    this.recipeId,
   });
 
-  // Optional: Add methods for serialization/deserialization if needed later
+  factory Meal.fromJson(Map<String, dynamic> json) {
+    return Meal(
+      id: json['id'],
+      name: json['name'],
+      date: json['date'] ?? '',
+      recipeId: json['recipe_id'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'date': date,
+      'recipe_id': recipeId,
+    };
+  }
 }
