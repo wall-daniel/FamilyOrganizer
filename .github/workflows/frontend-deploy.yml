@@ -30,7 +30,7 @@ jobs:
         working-directory: ./family_organizer
 
       - name: Build Flutter Web
-        run: flutter build web --release --base-href /family-organizer/ # Adjust base-href if your repo name is different
+        run: flutter build web --release --base-href /FamilyOrganizer/ # Adjust base-href to match repository name
         working-directory: ./family_organizer
 
       - name: Deploy to GitHub Pages
