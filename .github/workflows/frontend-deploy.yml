@@ -8,11 +8,13 @@ on:
       - 'family_organizer/**' # Trigger only when changes are made in the Flutter app directory
 
 env:
-  FLUTTER_VERSION: '3.10.0' # Specify the Flutter version you are using
+  FLUTTER_VERSION: '3.35.5'
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Grant write permissions to GITHUB_TOKEN for deploying to gh-pages
     steps:
       - name: Checkout
         uses: actions/checkout@v3
