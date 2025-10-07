@@ -3,10 +3,23 @@ import 'package:provider/provider.dart';
 import 'package:family_organizer/services/grocery_service.dart';
 import 'package:family_organizer/models/grocery_item.dart';
 
-class GroceryListScreen extends StatelessWidget {
+class GroceryListScreen extends StatefulWidget {
   const GroceryListScreen({super.key});
 
   static const String routeName = '/grocery-list';
+
+  @override
+  State<GroceryListScreen> createState() => _GroceryListScreenState();
+}
+
+class _GroceryListScreenState extends State<GroceryListScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<GroceryService>(context, listen: false).fetchGroceryItems();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +52,7 @@ class GroceryListScreen extends StatelessWidget {
                 leading: Checkbox(
                   value: item.isCompleted,
                   onChanged: (bool? value) {
-                    if (item.id != null) { // Ensure id is not null
+                    if (item.id != null) {
                       groceryService.toggleItemCompletion(item.id!);
                     }
                   },
@@ -47,7 +60,7 @@ class GroceryListScreen extends StatelessWidget {
                 trailing: IconButton(
                   icon: const Icon(Icons.delete),
                   onPressed: () {
-                    if (item.id != null) { // Ensure id is not null
+                    if (item.id != null) {
                       groceryService.removeGroceryItem(item.id!);
                     }
                   },
@@ -57,7 +70,7 @@ class GroceryListScreen extends StatelessWidget {
           );
         },
       ),
-      floatingActionButton: Consumer<GroceryService>( // Wrap FAB in its own Consumer
+      floatingActionButton: Consumer<GroceryService>(
         builder: (context, groceryService, child) {
           return FloatingActionButton(
             onPressed: () {
