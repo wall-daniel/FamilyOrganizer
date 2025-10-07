@@ -87,15 +87,25 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
 void _showAddGroceryItemDialog(
     BuildContext context, GroceryService groceryService) {
   final TextEditingController nameController = TextEditingController();
+  final TextEditingController quantityController = TextEditingController();
 
   showDialog(
     context: context,
     builder: (context) {
       return AlertDialog(
         title: const Text('Add New Grocery Item'),
-        content: TextField(
-          controller: nameController,
-          decoration: const InputDecoration(labelText: 'Item Name'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: 'Item Name'),
+            ),
+            TextField(
+              controller: quantityController,
+              decoration: const InputDecoration(labelText: 'Quantity (Optional)'),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -107,7 +117,7 @@ void _showAddGroceryItemDialog(
               if (nameController.text.isNotEmpty) {
                 final newItem = GroceryItem(
                   name: nameController.text,
-                  quantity: '', // Default quantity
+                  quantity: quantityController.text,
                   isCompleted: false,
                 );
                 groceryService.addGroceryItem(newItem);
