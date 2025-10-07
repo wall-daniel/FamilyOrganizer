@@ -193,10 +193,11 @@ class Recipe:
         return cursor.rowcount
 
 class GroceryItem:
-    def __init__(self, id=None, name=None, quantity=None, is_completed=False):
+    def __init__(self, id=None, name=None, quantity='', category='Other', is_completed=False):
         self.id = id
         self.name = name
         self.quantity = quantity
+        self.category = category
         self.is_completed = is_completed
 
     @staticmethod
@@ -213,20 +214,21 @@ class GroceryItem:
         return row_to_dict(item) if item else None
 
     @staticmethod
-    def create(name, quantity='', is_completed=False):
+    def create(name, quantity='', category='Other', is_completed=False):
         db = get_db()
-        cursor = db.execute('INSERT INTO grocery_items (name, quantity, is_completed) VALUES (?, ?, ?)',
-                            (name, quantity, is_completed))
+        cursor = db.execute('INSERT INTO grocery_items (name, quantity, category, is_completed) VALUES (?, ?, ?, ?)',
+                            (name, quantity, category, is_completed))
         db.commit()
         return {
             "id": cursor.lastrowid,
             "name": name,
             "quantity": quantity,
+            "category": category,
             "is_completed": is_completed
         }
 
     @staticmethod
-    def update(item_id, name=None, quantity=None, is_completed=None):
+    def update(item_id, name=None, quantity=None, category=None, is_completed=None):
         db = get_db()
         query_parts = []
         params = []
@@ -236,6 +238,9 @@ class GroceryItem:
         if quantity is not None:
             query_parts.append('quantity = ?')
             params.append(quantity)
+        if category is not None:
+            query_parts.append('category = ?')
+            params.append(category)
         if is_completed is not None:
             query_parts.append('is_completed = ?')
             params.append(is_completed)

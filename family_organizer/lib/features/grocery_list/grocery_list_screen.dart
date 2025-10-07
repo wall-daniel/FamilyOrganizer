@@ -23,6 +23,7 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isWideScreen = MediaQuery.of(context).size.width > 700;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Grocery List'),
@@ -36,37 +37,105 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
               child: Text('No grocery items yet! Add one using the + button.'),
             );
           }
-          return ListView.builder(
-            itemCount: groceryService.groceryItems.length,
-            itemBuilder: (context, index) {
-              final item = groceryService.groceryItems[index];
-              return ListTile(
-                title: Text(
-                  item.name,
-                  style: TextStyle(
-                    decoration: item.isCompleted
-                        ? TextDecoration.lineThrough
-                        : TextDecoration.none,
+          // Group items by category
+          final categories = <String>{};
+          for (var item in groceryService.groceryItems) {
+            categories.add(item.category);
+          }
+          final grouped = {
+            for (var cat in categories)
+              cat: groceryService.groceryItems.where((i) => i.category == cat).toList()
+          };
+          final categoryWidgets = grouped.entries.map((entry) {
+            return SizedBox(
+              width: isWideScreen ? 350 : double.infinity,
+              child: Card(
+                margin: const EdgeInsets.all(12),
+                elevation: 3,
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(entry.key, style: Theme.of(context).textTheme.titleLarge),
+                      const SizedBox(height: 8),
+                      ...entry.value.map((item) => Card(
+                        margin: const EdgeInsets.symmetric(vertical: 4),
+                        elevation: 1,
+                        child: ListTile(
+                          leading: Checkbox(
+                            value: item.isCompleted,
+                            onChanged: (bool? value) {
+                              if (item.id != null) {
+                                groceryService.toggleItemCompletion(item.id!);
+                              }
+                            },
+                          ),
+                          title: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  item.name,
+                                  style: TextStyle(
+                                    decoration: item.isCompleted
+                                        ? TextDecoration.lineThrough
+                                        : TextDecoration.none,
+                                    fontWeight: FontWeight.w600,
+                                    color: item.isCompleted
+                                        ? Colors.grey
+                                        : Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
+                              ),
+                              if (item.quantity.isNotEmpty)
+                                Container(
+                                  margin: const EdgeInsets.only(left: 8),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.shade50,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    item.quantity,
+                                    style: TextStyle(
+                                      color: Colors.blue.shade700,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          trailing: IconButton(
+                            icon: Icon(Icons.delete, color: Colors.red.shade400),
+                            tooltip: 'Delete',
+                            onPressed: () {
+                              if (item.id != null) {
+                                groceryService.removeGroceryItem(item.id!);
+                              }
+                            },
+                          ),
+                        ),
+                      )),
+                    ],
                   ),
                 ),
-                leading: Checkbox(
-                  value: item.isCompleted,
-                  onChanged: (bool? value) {
-                    if (item.id != null) {
-                      groceryService.toggleItemCompletion(item.id!);
-                    }
-                  },
-                ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed: () {
-                    if (item.id != null) {
-                      groceryService.removeGroceryItem(item.id!);
-                    }
-                  },
-                ),
-              );
-            },
+              ),
+            );
+          }).toList();
+          return SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+              child: isWideScreen
+                  ? Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: categoryWidgets,
+              )
+                  : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: categoryWidgets,
+              ),
+            ),
           );
         },
       ),
@@ -88,24 +157,43 @@ void _showAddGroceryItemDialog(
     BuildContext context, GroceryService groceryService) {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController quantityController = TextEditingController();
+  String selectedCategory = 'Other';
+  final List<String> categories = [
+    'Meat', 'Produce', 'Dairy', 'Snacks', 'Other'
+  ];
 
   showDialog(
     context: context,
     builder: (context) {
       return AlertDialog(
         title: const Text('Add New Grocery Item'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(labelText: 'Item Name'),
-            ),
-            TextField(
-              controller: quantityController,
-              decoration: const InputDecoration(labelText: 'Quantity (Optional)'),
-            ),
-          ],
+        content: StatefulBuilder(
+          builder: (context, setState) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: 'Item Name'),
+                ),
+                TextField(
+                  controller: quantityController,
+                  decoration: const InputDecoration(labelText: 'Quantity (Optional)'),
+                ),
+                DropdownButtonFormField<String>(
+                  value: selectedCategory,
+                  items: categories.map((cat) => DropdownMenuItem(
+                    value: cat,
+                    child: Text(cat),
+                  )).toList(),
+                  onChanged: (value) {
+                    if (value != null) setState(() => selectedCategory = value);
+                  },
+                  decoration: const InputDecoration(labelText: 'Category'),
+                ),
+              ],
+            );
+          },
         ),
         actions: [
           TextButton(
@@ -118,6 +206,7 @@ void _showAddGroceryItemDialog(
                 final newItem = GroceryItem(
                   name: nameController.text,
                   quantity: quantityController.text,
+                  category: selectedCategory,
                   isCompleted: false,
                 );
                 groceryService.addGroceryItem(newItem);

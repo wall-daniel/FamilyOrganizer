@@ -156,6 +156,7 @@ def add_grocery_item():
     item = GroceryItem.create(
         name=new_item_data['name'],
         quantity=new_item_data.get('quantity', ''),
+        category=new_item_data.get('category', 'Other'),
         is_completed=new_item_data.get('is_completed', False)
     )
     return jsonify(item), 201
@@ -174,6 +175,7 @@ def update_grocery_item(item_id):
         item_id,
         name=updated_data.get('name'),
         quantity=updated_data.get('quantity'),
+        category=updated_data.get('category'),
         is_completed=updated_data.get('is_completed')
     )
     if row_count == 0:

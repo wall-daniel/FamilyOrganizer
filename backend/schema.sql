@@ -14,6 +14,7 @@ CREATE TABLE grocery_items (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     quantity TEXT,
+    category TEXT DEFAULT 'Other',
     is_completed BOOLEAN DEFAULT 0
 );
 
