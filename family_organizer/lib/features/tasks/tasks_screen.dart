@@ -3,10 +3,24 @@ import 'package:provider/provider.dart';
 import 'package:family_organizer/services/task_service.dart';
 import 'package:family_organizer/models/task.dart'; // Import the Task model
 
-class TasksScreen extends StatelessWidget {
+class TasksScreen extends StatefulWidget {
   const TasksScreen({super.key});
 
   static const String routeName = '/tasks';
+
+  @override
+  State<TasksScreen> createState() => _TasksScreenState();
+}
+
+class _TasksScreenState extends State<TasksScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Fetch tasks after the first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<TaskService>(context, listen: false).fetchTasks();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

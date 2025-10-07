@@ -1,6 +1,7 @@
 from flask import Flask
 from database import init_app
 from routes import bp as api_bp
+from flask_cors import CORS  # Add this import
 
 def create_app():
     app = Flask(__name__)
@@ -8,6 +9,7 @@ def create_app():
 
     init_app(app)
     app.register_blueprint(api_bp)
+    CORS(app)  # Enable CORS for all routes
 
     @app.route('/')
     def hello():
