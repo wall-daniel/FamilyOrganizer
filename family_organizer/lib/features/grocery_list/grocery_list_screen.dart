@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:family_organizer/services/grocery_service.dart';
 import 'package:family_organizer/models/grocery_item.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
 class GroceryListScreen extends StatefulWidget {
   const GroceryListScreen({super.key});
@@ -46,12 +47,12 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
             for (var cat in categories)
               cat: groceryService.groceryItems.where((i) => i.category == cat).toList()
           };
-          final categoryWidgets = grouped.entries.map((entry) {
-            return SizedBox(
-              width: isWideScreen ? 350 : double.infinity,
-              child: Card(
-                margin: const EdgeInsets.all(12),
-                elevation: 3,
+          final allCards = grouped.entries.map((entry) {
+            return Card(
+              margin: const EdgeInsets.all(12),
+              elevation: 3,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 400),
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Column(
@@ -126,14 +127,18 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
               child: isWideScreen
-                  ? Wrap(
-                spacing: 16,
-                runSpacing: 16,
-                children: categoryWidgets,
+                  ? MasonryGridView.count(
+                crossAxisCount: 3,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemBuilder: (context, index) => allCards[index],
+                itemCount: allCards.length,
               )
                   : Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: categoryWidgets,
+                children: allCards,
               ),
             ),
           );
@@ -159,7 +164,7 @@ void _showAddGroceryItemDialog(
   final TextEditingController quantityController = TextEditingController();
   String selectedCategory = 'Other';
   final List<String> categories = [
-    'Meat', 'Produce', 'Dairy', 'Snacks', 'Other'
+    'Meat', 'Produce', 'Dairy', 'Snacks', 'household', 'Other'
   ];
 
   showDialog(
