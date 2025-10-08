@@ -75,9 +75,14 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
                             style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 8),
-                          Padding(
-                            padding: const EdgeInsets.only(left: 8.0, bottom: 4.0),
-                            child: Text(recipe.instructions), // Display as single string
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: recipe.instructions
+                                .map((step) => Padding(
+                                      padding: const EdgeInsets.only(left: 8.0, bottom: 4.0),
+                                      child: Text('• $step'),
+                                    ))
+                                .toList(),
                           ),
                           Align(
                             alignment: Alignment.bottomRight,

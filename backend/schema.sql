@@ -30,6 +30,6 @@ CREATE TABLE meals (
 CREATE TABLE recipes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    ingredients TEXT, -- JSON-encoded list of strings
+    ingredients TEXT, -- JSON-encoded list of objects with name and optional quantity
     instructions TEXT -- JSON-encoded list of strings
 );

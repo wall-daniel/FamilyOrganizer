@@ -3,6 +3,12 @@ import 'package:provider/provider.dart';
 import 'package:family_organizer/services/recipe_service.dart';
 import 'package:family_organizer/models/recipe.dart';
 
+class Ingredient {
+  String name;
+  String quantity;
+  Ingredient({this.name = '', this.quantity = ''});
+}
+
 class AddRecipeScreen extends StatefulWidget {
   const AddRecipeScreen({super.key});
 
@@ -15,13 +21,15 @@ class AddRecipeScreen extends StatefulWidget {
 class _AddRecipeScreenState extends State<AddRecipeScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
-  List<TextEditingController> _ingredientControllers = [TextEditingController()];
+  List<Ingredient> _ingredients = [Ingredient()];
   List<TextEditingController> _instructionControllers = [TextEditingController()];
 
   @override
   void dispose() {
     _nameController.dispose();
-    for (var c in _ingredientControllers) { c.dispose(); }
+    for (var ing in _ingredients) {
+      // No controllers to dispose
+    }
     for (var c in _instructionControllers) { c.dispose(); }
     super.dispose();
   }
@@ -30,7 +38,10 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
     if (_formKey.currentState!.validate()) {
       final newRecipe = Recipe(
         name: _nameController.text,
-        ingredients: _ingredientControllers.map((c) => c.text.trim()).where((e) => e.isNotEmpty).toList(),
+        ingredients: _ingredients
+            .where((ing) => ing.name.trim().isNotEmpty)
+            .map((ing) => '${ing.quantity.trim()} ${ing.name.trim()}'.trim())
+            .toList(),
         instructions: _instructionControllers.map((c) => c.text.trim()).where((e) => e.isNotEmpty).toList(),
       );
       Provider.of<RecipeService>(context, listen: false).addRecipe(newRecipe);
@@ -67,26 +78,40 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
               ),
               const SizedBox(height: 16),
               Text('Ingredients:', style: Theme.of(context).textTheme.titleMedium),
-              ..._ingredientControllers.asMap().entries.map((entry) {
+              ..._ingredients.asMap().entries.map((entry) {
                 final i = entry.key;
-                final c = entry.value;
+                final ing = entry.value;
                 return Row(
                   children: [
                     Expanded(
+                      flex: 2,
                       child: TextFormField(
-                        controller: c,
+                        initialValue: ing.name,
                         decoration: InputDecoration(
                           labelText: 'Ingredient ${i + 1}',
                           border: const OutlineInputBorder(),
                         ),
+                        onChanged: (val) => ing.name = val,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 1,
+                      child: TextFormField(
+                        initialValue: ing.quantity,
+                        decoration: const InputDecoration(
+                          labelText: 'Quantity',
+                          border: OutlineInputBorder(),
+                        ),
+                        onChanged: (val) => ing.quantity = val,
                       ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.remove_circle, color: Colors.red),
-                      onPressed: _ingredientControllers.length > 1
+                      onPressed: _ingredients.length > 1
                           ? () {
                               setState(() {
-                                _ingredientControllers.removeAt(i);
+                                _ingredients.removeAt(i);
                               });
                             }
                           : null,
@@ -99,7 +124,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                 label: const Text('Add Ingredient'),
                 onPressed: () {
                   setState(() {
-                    _ingredientControllers.add(TextEditingController());
+                    _ingredients.add(Ingredient());
                   });
                 },
               ),
