@@ -2,25 +2,25 @@ class Recipe {
   final int? id;
   String name;
   List<String> ingredients;
-  String instructions; // Changed from List<String> to String to match backend
+  List<String> instructions;
 
   Recipe({
     this.id,
     required this.name,
     this.ingredients = const [],
-    this.instructions = '',
+    this.instructions = const [],
   });
 
   factory Recipe.fromJson(Map<String, dynamic> json) {
     return Recipe(
       id: json['id'],
       name: json['name'],
-      ingredients: (json['ingredients'] as String? ?? '')
-          .split(',')
-          .map((e) => e.trim())
-          .where((e) => e.isNotEmpty)
-          .toList(),
-      instructions: json['instructions'] ?? '',
+      ingredients: (json['ingredients'] is List)
+          ? List<String>.from(json['ingredients'])
+          : [],
+      instructions: (json['instructions'] is List)
+          ? List<String>.from(json['instructions'])
+          : [],
     );
   }
 
@@ -28,7 +28,7 @@ class Recipe {
     return {
       'id': id,
       'name': name,
-      'ingredients': ingredients.join(', '), // Convert list to comma-separated string
+      'ingredients': ingredients,
       'instructions': instructions,
     };
   }

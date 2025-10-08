@@ -111,8 +111,8 @@ def add_recipe():
     
     recipe = Recipe.create(
         name=new_recipe_data['name'],
-        ingredients=new_recipe_data.get('ingredients', ''),
-        instructions=new_recipe_data.get('instructions', '')
+        ingredients=new_recipe_data.get('ingredients', []),
+        instructions=new_recipe_data.get('instructions', [])
     )
     return jsonify(recipe), 201
 

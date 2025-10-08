@@ -4,10 +4,23 @@ import 'package:family_organizer/services/recipe_service.dart';
 import 'package:family_organizer/models/recipe.dart';
 import 'package:family_organizer/features/recipes/add_recipe_screen.dart';
 
-class RecipeListScreen extends StatelessWidget {
+class RecipeListScreen extends StatefulWidget {
   const RecipeListScreen({super.key});
 
   static const String routeName = '/recipes';
+
+  @override
+  State<RecipeListScreen> createState() => _RecipeListScreenState();
+}
+
+class _RecipeListScreenState extends State<RecipeListScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<RecipeService>(context, listen: false).fetchRecipes();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

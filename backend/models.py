@@ -1,4 +1,5 @@
 from database import get_db, row_to_dict
+import json
 
 class Task:
     def __init__(self, id=None, title=None, description=None, completed=False):
@@ -137,33 +138,46 @@ class Recipe:
     def __init__(self, id=None, name=None, ingredients=None, instructions=None):
         self.id = id
         self.name = name
-        self.ingredients = ingredients
-        self.instructions = instructions
+        self.ingredients = ingredients if ingredients is not None else []
+        self.instructions = instructions if instructions is not None else []
 
     @staticmethod
     def all():
         db = get_db()
         cursor = db.execute('SELECT * FROM recipes')
-        return [row_to_dict(row) for row in cursor.fetchall()]
+        recipes = []
+        for row in cursor.fetchall():
+            d = row_to_dict(row)
+            d['ingredients'] = json.loads(d['ingredients']) if d['ingredients'] else []
+            d['instructions'] = json.loads(d['instructions']) if d['instructions'] else []
+            recipes.append(d)
+        return recipes
 
     @staticmethod
     def get(recipe_id):
         db = get_db()
         cursor = db.execute('SELECT * FROM recipes WHERE id = ?', (recipe_id,))
         recipe = cursor.fetchone()
-        return row_to_dict(recipe) if recipe else None
+        if recipe:
+            d = row_to_dict(recipe)
+            d['ingredients'] = json.loads(d['ingredients']) if d['ingredients'] else []
+            d['instructions'] = json.loads(d['instructions']) if d['instructions'] else []
+            return d
+        return None
 
     @staticmethod
-    def create(name, ingredients='', instructions=''):
+    def create(name, ingredients=None, instructions=None):
         db = get_db()
+        ingredients_json = json.dumps(ingredients) if ingredients is not None else json.dumps([])
+        instructions_json = json.dumps(instructions) if instructions is not None else json.dumps([])
         cursor = db.execute('INSERT INTO recipes (name, ingredients, instructions) VALUES (?, ?, ?)',
-                            (name, ingredients, instructions))
+                            (name, ingredients_json, instructions_json))
         db.commit()
         return {
             "id": cursor.lastrowid,
             "name": name,
-            "ingredients": ingredients,
-            "instructions": instructions
+            "ingredients": json.loads(ingredients_json),
+            "instructions": json.loads(instructions_json)
         }
 
     @staticmethod
@@ -176,14 +190,12 @@ class Recipe:
             params.append(name)
         if ingredients is not None:
             query_parts.append('ingredients = ?')
-            params.append(ingredients)
+            params.append(json.dumps(ingredients))
         if instructions is not None:
             query_parts.append('instructions = ?')
-            params.append(instructions)
-
+            params.append(json.dumps(instructions))
         if not query_parts:
             return 0
-
         query = 'UPDATE recipes SET ' + ', '.join(query_parts) + ' WHERE id = ?'
         params.append(recipe_id)
         cursor = db.execute(query, tuple(params))

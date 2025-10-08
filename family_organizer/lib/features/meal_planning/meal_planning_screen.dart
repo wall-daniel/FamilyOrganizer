@@ -180,6 +180,35 @@ class MealDayCard extends StatelessWidget {
   final Function(DateTime) onAddMeal;
   final Function(Meal) onDeleteMeal;
 
+  Widget _mealTimeChip(String? mealTime) {
+    final Map<String, Color> colors = {
+      'Breakfast': Colors.orange.shade200,
+      'Lunch': Colors.lightGreen.shade200,
+      'Dinner': Colors.blue.shade200,
+      'Snack': Colors.purple.shade200,
+    };
+    final Map<String, IconData> icons = {
+      'Breakfast': Icons.wb_sunny,
+      'Lunch': Icons.lunch_dining,
+      'Dinner': Icons.nightlight_round,
+      'Snack': Icons.fastfood,
+    };
+    final color = colors[mealTime] ?? Colors.grey.shade300;
+    final icon = icons[mealTime] ?? Icons.help_outline;
+    return Chip(
+        label: SizedBox(
+          width: 64,
+          child: Text(
+            mealTime ?? '',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'monospace', fontSize: 14),
+          ),
+        ),
+        avatar: Icon(icon, size: 18, color: Colors.black54),
+        backgroundColor: color,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Sort meals by mealTime
@@ -226,9 +255,15 @@ class MealDayCard extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          '${meal.mealTime ?? ''}: ${meal.name}',
-                          style: Theme.of(context).textTheme.titleMedium,
+                        Row(
+                          children: [
+                            _mealTimeChip(meal.mealTime),
+                            const SizedBox(width: 8),
+                            Text(
+                              meal.name,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                          ],
                         ),
                         IconButton(
                           icon: const Icon(Icons.delete, color: Colors.red),

@@ -15,14 +15,14 @@ class AddRecipeScreen extends StatefulWidget {
 class _AddRecipeScreenState extends State<AddRecipeScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _ingredientsController = TextEditingController();
-  final TextEditingController _instructionsController = TextEditingController();
+  List<TextEditingController> _ingredientControllers = [TextEditingController()];
+  List<TextEditingController> _instructionControllers = [TextEditingController()];
 
   @override
   void dispose() {
     _nameController.dispose();
-    _ingredientsController.dispose();
-    _instructionsController.dispose();
+    for (var c in _ingredientControllers) { c.dispose(); }
+    for (var c in _instructionControllers) { c.dispose(); }
     super.dispose();
   }
 
@@ -30,15 +30,11 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
     if (_formKey.currentState!.validate()) {
       final newRecipe = Recipe(
         name: _nameController.text,
-        ingredients: _ingredientsController.text
-            .split(',')
-            .map((e) => e.trim())
-            .where((e) => e.isNotEmpty)
-            .toList(),
-        instructions: _instructionsController.text, // Instructions is now a single String
+        ingredients: _ingredientControllers.map((c) => c.text.trim()).where((e) => e.isNotEmpty).toList(),
+        instructions: _instructionControllers.map((c) => c.text.trim()).where((e) => e.isNotEmpty).toList(),
       );
       Provider.of<RecipeService>(context, listen: false).addRecipe(newRecipe);
-      Navigator.pop(context); // Go back to the recipe list
+      Navigator.pop(context);
     }
   }
 
@@ -70,23 +66,80 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _ingredientsController,
-                decoration: const InputDecoration(
-                  labelText: 'Ingredients (comma-separated)',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: null,
+              Text('Ingredients:', style: Theme.of(context).textTheme.titleMedium),
+              ..._ingredientControllers.asMap().entries.map((entry) {
+                final i = entry.key;
+                final c = entry.value;
+                return Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: c,
+                        decoration: InputDecoration(
+                          labelText: 'Ingredient ${i + 1}',
+                          border: const OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.remove_circle, color: Colors.red),
+                      onPressed: _ingredientControllers.length > 1
+                          ? () {
+                              setState(() {
+                                _ingredientControllers.removeAt(i);
+                              });
+                            }
+                          : null,
+                    ),
+                  ],
+                );
+              }),
+              TextButton.icon(
+                icon: const Icon(Icons.add),
+                label: const Text('Add Ingredient'),
+                onPressed: () {
+                  setState(() {
+                    _ingredientControllers.add(TextEditingController());
+                  });
+                },
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _instructionsController,
-                decoration: const InputDecoration(
-                  labelText: 'Instructions (one per line)',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.multiline,
-                maxLines: null,
+              Text('Instructions:', style: Theme.of(context).textTheme.titleMedium),
+              ..._instructionControllers.asMap().entries.map((entry) {
+                final i = entry.key;
+                final c = entry.value;
+                return Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: c,
+                        decoration: InputDecoration(
+                          labelText: 'Step ${i + 1}',
+                          border: const OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.remove_circle, color: Colors.red),
+                      onPressed: _instructionControllers.length > 1
+                          ? () {
+                              setState(() {
+                                _instructionControllers.removeAt(i);
+                              });
+                            }
+                          : null,
+                    ),
+                  ],
+                );
+              }),
+              TextButton.icon(
+                icon: const Icon(Icons.add),
+                label: const Text('Add Step'),
+                onPressed: () {
+                  setState(() {
+                    _instructionControllers.add(TextEditingController());
+                  });
+                },
               ),
               const SizedBox(height: 24),
               ElevatedButton(
