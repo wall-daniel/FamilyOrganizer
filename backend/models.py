@@ -65,11 +65,12 @@ class Task:
         return cursor.rowcount
 
 class Meal:
-    def __init__(self, id=None, name=None, date=None, recipe_id=None):
+    def __init__(self, id=None, name=None, date=None, recipe_id=None, meal_time=None):
         self.id = id
         self.name = name
         self.date = date
         self.recipe_id = recipe_id
+        self.meal_time = meal_time
 
     @staticmethod
     def all():
@@ -85,20 +86,21 @@ class Meal:
         return row_to_dict(meal) if meal else None
 
     @staticmethod
-    def create(name, date='', recipe_id=None):
+    def create(name, date='', recipe_id=None, meal_time=None):
         db = get_db()
-        cursor = db.execute('INSERT INTO meals (name, date, recipe_id) VALUES (?, ?, ?)',
-                            (name, date, recipe_id))
+        cursor = db.execute('INSERT INTO meals (name, date, recipe_id, meal_time) VALUES (?, ?, ?, ?)',
+                            (name, date, recipe_id, meal_time))
         db.commit()
         return {
             "id": cursor.lastrowid,
             "name": name,
             "date": date,
-            "recipe_id": recipe_id
+            "recipe_id": recipe_id,
+            "meal_time": meal_time
         }
 
     @staticmethod
-    def update(meal_id, name=None, date=None, recipe_id=None):
+    def update(meal_id, name=None, date=None, recipe_id=None, meal_time=None):
         db = get_db()
         query_parts = []
         params = []
@@ -111,6 +113,9 @@ class Meal:
         if recipe_id is not None:
             query_parts.append('recipe_id = ?')
             params.append(recipe_id)
+        if meal_time is not None:
+            query_parts.append('meal_time = ?')
+            params.append(meal_time)
 
         if not query_parts:
             return 0

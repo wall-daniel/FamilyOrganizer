@@ -129,8 +129,8 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
               child: isWideScreen
                   ? MasonryGridView.count(
                 crossAxisCount: 3,
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 16,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemBuilder: (context, index) => allCards[index],

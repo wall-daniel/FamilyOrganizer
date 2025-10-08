@@ -85,5 +85,10 @@ class MealService extends ChangeNotifier {
     }
   }
 
+  Future<void> deleteMeal(Meal meal) async {
+    if (meal.id == null) return;
+    await removeMeal(meal.id!);
+  }
+
   // TODO: Add methods for updating meals, filtering by date, etc.
 }

@@ -23,6 +23,7 @@ CREATE TABLE meals (
     name TEXT NOT NULL,
     date TEXT,
     recipe_id INTEGER,
+    meal_time TEXT,
     FOREIGN KEY (recipe_id) REFERENCES recipes(id)
 );
 

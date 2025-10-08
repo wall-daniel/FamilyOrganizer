@@ -5,10 +5,23 @@ import 'package:family_organizer/models/meal.dart';
 import 'package:family_organizer/services/recipe_service.dart'; // Import RecipeService
 import 'package:family_organizer/models/recipe.dart'; // Import Recipe model
 
-class MealPlanningScreen extends StatelessWidget {
+class MealPlanningScreen extends StatefulWidget {
   const MealPlanningScreen({super.key});
 
   static const String routeName = '/meal-planning';
+
+  @override
+  State<MealPlanningScreen> createState() => _MealPlanningScreenState();
+}
+
+class _MealPlanningScreenState extends State<MealPlanningScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<MealService>(context, listen: false).fetchMeals();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +59,9 @@ class MealPlanningScreen extends StatelessWidget {
                 onAddMeal: (date) {
                   _showAddMealDialog(context, mealService, date);
                 },
+                onDeleteMeal: (meal) {
+                  mealService.deleteMeal(meal);
+                },
               );
             },
           );
@@ -57,8 +73,9 @@ class MealPlanningScreen extends StatelessWidget {
   void _showAddMealDialog(
       BuildContext context, MealService mealService, DateTime scheduledDate) {
     final TextEditingController nameController = TextEditingController();
-
-    Recipe? selectedRecipe; // To hold the selected recipe
+    Recipe? selectedRecipe;
+    String? selectedMealTime;
+    final List<String> mealTimes = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
 
     showDialog(
       context: context,
@@ -66,7 +83,7 @@ class MealPlanningScreen extends StatelessWidget {
         final recipeService = Provider.of<RecipeService>(context, listen: false);
         final List<Recipe> availableRecipes = recipeService.recipes;
 
-        return StatefulBuilder( // Use StatefulBuilder to update dialog UI
+        return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
               title: const Text('Add New Meal'),
@@ -89,7 +106,6 @@ class MealPlanningScreen extends StatelessWidget {
                             selectedRecipe = recipe;
                             if (selectedRecipe != null) {
                               nameController.text = selectedRecipe!.name;
-                              // Removed description and ingredients population
                             } else {
                               nameController.clear();
                             }
@@ -102,7 +118,22 @@ class MealPlanningScreen extends StatelessWidget {
                       controller: nameController,
                       decoration: const InputDecoration(labelText: 'Meal Name'),
                     ),
-                    // Removed description and ingredients TextFields
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(labelText: 'Meal Time'),
+                      value: selectedMealTime,
+                      items: mealTimes.map((time) {
+                        return DropdownMenuItem<String>(
+                          value: time,
+                          child: Text(time),
+                        );
+                      }).toList(),
+                      onChanged: (String? time) {
+                        setState(() {
+                          selectedMealTime = time;
+                        });
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -113,11 +144,12 @@ class MealPlanningScreen extends StatelessWidget {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    if (nameController.text.isNotEmpty) {
+                    if (nameController.text.isNotEmpty && selectedMealTime != null) {
                       final newMeal = Meal(
                         name: nameController.text,
                         date: scheduledDate.toIso8601String().split('T').first,
                         recipeId: selectedRecipe?.id,
+                        mealTime: selectedMealTime,
                       );
                       mealService.addMeal(newMeal);
                     }
@@ -140,14 +172,27 @@ class MealDayCard extends StatelessWidget {
     required this.day,
     required this.meals,
     required this.onAddMeal,
+    required this.onDeleteMeal,
   });
 
   final DateTime day;
   final List<Meal> meals;
   final Function(DateTime) onAddMeal;
+  final Function(Meal) onDeleteMeal;
 
   @override
   Widget build(BuildContext context) {
+    // Sort meals by mealTime
+    final sortedMeals = List<Meal>.from(meals)
+      ..sort((a, b) {
+        final order = {
+          'Breakfast': 0,
+          'Lunch': 1,
+          'Dinner': 2,
+          'Snack': 3,
+        };
+        return (order[a.mealTime ?? ''] ?? 99).compareTo(order[b.mealTime ?? ''] ?? 99);
+      });
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8.0),
       elevation: 2.0,
@@ -176,11 +221,21 @@ class MealDayCard extends StatelessWidget {
                 child: Text('No meals planned for this day.'),
               )
             else
-              ...meals.map((meal) => Padding(
+              ...sortedMeals.map((meal) => Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4.0),
-                    child: Text(
-                      meal.name,
-                      style: Theme.of(context).textTheme.titleMedium,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${meal.mealTime ?? ''}: ${meal.name}',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          tooltip: 'Delete meal',
+                          onPressed: () => onDeleteMeal(meal),
+                        ),
+                      ],
                     ),
                   )),
           ],

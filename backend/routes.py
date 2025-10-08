@@ -64,7 +64,8 @@ def add_meal():
     meal = Meal.create(
         name=new_meal_data['name'],
         date=new_meal_data.get('date', ''),
-        recipe_id=new_meal_data.get('recipe_id')
+        recipe_id=new_meal_data.get('recipe_id'),
+        meal_time=new_meal_data.get('meal_time')
     )
     return jsonify(meal), 201
 
@@ -82,7 +83,8 @@ def update_meal(meal_id):
         meal_id,
         name=updated_data.get('name'),
         date=updated_data.get('date'),
-        recipe_id=updated_data.get('recipe_id')
+        recipe_id=updated_data.get('recipe_id'),
+        meal_time=updated_data.get('meal_time')
     )
     if row_count == 0:
         return jsonify({"error": "Meal not found"}), 404
