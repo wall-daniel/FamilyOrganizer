@@ -2,12 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:family_organizer/services/recipe_service.dart';
 import 'package:family_organizer/models/recipe.dart';
-
-class Ingredient {
-  String name;
-  String quantity;
-  Ingredient({this.name = '', this.quantity = ''});
-}
+import 'package:family_organizer/models/ingredient.dart' as model;
 
 class AddRecipeScreen extends StatefulWidget {
   const AddRecipeScreen({super.key});
@@ -21,7 +16,7 @@ class AddRecipeScreen extends StatefulWidget {
 class _AddRecipeScreenState extends State<AddRecipeScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
-  List<Ingredient> _ingredients = [Ingredient()];
+  List<model.Ingredient> _ingredients = [model.Ingredient(name: '')];
   List<TextEditingController> _instructionControllers = [TextEditingController()];
 
   @override
@@ -40,7 +35,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
         name: _nameController.text,
         ingredients: _ingredients
             .where((ing) => ing.name.trim().isNotEmpty)
-            .map((ing) => '${ing.quantity.trim()} ${ing.name.trim()}'.trim())
+            .map((ing) => model.Ingredient(name: ing.name.trim(), quantity: ing.quantity?.trim()))
             .toList(),
         instructions: _instructionControllers.map((c) => c.text.trim()).where((e) => e.isNotEmpty).toList(),
       );
@@ -91,7 +86,11 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                           labelText: 'Ingredient ${i + 1}',
                           border: const OutlineInputBorder(),
                         ),
-                        onChanged: (val) => ing.name = val,
+                        onChanged: (val) {
+                          setState(() {
+                            _ingredients[i] = model.Ingredient(name: val, quantity: ing.quantity);
+                          });
+                        },
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -103,7 +102,11 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                           labelText: 'Quantity',
                           border: OutlineInputBorder(),
                         ),
-                        onChanged: (val) => ing.quantity = val,
+                        onChanged: (val) {
+                          setState(() {
+                            _ingredients[i] = model.Ingredient(name: ing.name, quantity: val);
+                          });
+                        },
                       ),
                     ),
                     IconButton(
@@ -124,7 +127,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                 label: const Text('Add Ingredient'),
                 onPressed: () {
                   setState(() {
-                    _ingredients.add(Ingredient());
+                    _ingredients.add(model.Ingredient(name: ''));
                   });
                 },
               ),

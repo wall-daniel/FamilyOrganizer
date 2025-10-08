@@ -1,7 +1,9 @@
+import 'ingredient.dart';
+
 class Recipe {
   final int? id;
   String name;
-  List<String> ingredients;
+  List<Ingredient> ingredients;
   List<String> instructions;
 
   Recipe({
@@ -15,9 +17,9 @@ class Recipe {
     return Recipe(
       id: json['id'],
       name: json['name'],
-      ingredients: (json['ingredients'] is List)
-          ? List<String>.from(json['ingredients'])
-          : [],
+      ingredients: (json['ingredients'] as List)
+          .map((i) => Ingredient.fromJson(i))
+          .toList(),
       instructions: (json['instructions'] is List)
           ? List<String>.from(json['instructions'])
           : [],
@@ -28,7 +30,7 @@ class Recipe {
     return {
       'id': id,
       'name': name,
-      'ingredients': ingredients,
+      'ingredients': ingredients.map((i) => i.toJson()).toList(),
       'instructions': instructions,
     };
   }

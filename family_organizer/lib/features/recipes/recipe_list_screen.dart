@@ -65,7 +65,9 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
                             children: recipe.ingredients
                                 .map((ingredient) => Padding(
                                       padding: const EdgeInsets.only(left: 8.0, bottom: 4.0),
-                                      child: Text('• $ingredient'),
+                                      child: Text(
+                                        '• ${ingredient.name}${ingredient.quantity != null && ingredient.quantity!.isNotEmpty ? ' (${ingredient.quantity})' : ''}',
+                                      ),
                                     ))
                                 .toList(),
                           ),

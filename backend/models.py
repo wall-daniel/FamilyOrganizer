@@ -134,11 +134,33 @@ class Meal:
         db.commit()
         return cursor.rowcount
 
+class RecipeIngredient:
+    @staticmethod
+    def get_for_recipe(recipe_id):
+        db = get_db()
+        cursor = db.execute('SELECT id, name, quantity FROM recipe_ingredients WHERE recipe_id = ?', (recipe_id,))
+        return [row_to_dict(row) for row in cursor.fetchall()]
+
+    @staticmethod
+    def create(recipe_id, name, quantity=None):
+        db = get_db()
+        cursor = db.execute('INSERT INTO recipe_ingredients (recipe_id, name, quantity) VALUES (?, ?, ?)',
+                            (recipe_id, name, quantity))
+        db.commit()
+        return cursor.lastrowid
+
+    @staticmethod
+    def delete_for_recipe(recipe_id):
+        db = get_db()
+        cursor = db.execute('DELETE FROM recipe_ingredients WHERE recipe_id = ?', (recipe_id,))
+        db.commit()
+        return cursor.rowcount
+
+
 class Recipe:
-    def __init__(self, id=None, name=None, ingredients=None, instructions=None):
+    def __init__(self, id=None, name=None, instructions=None):
         self.id = id
         self.name = name
-        self.ingredients = ingredients if ingredients is not None else []
         self.instructions = instructions if instructions is not None else []
 
     @staticmethod
@@ -148,7 +170,7 @@ class Recipe:
         recipes = []
         for row in cursor.fetchall():
             d = row_to_dict(row)
-            d['ingredients'] = json.loads(d['ingredients']) if d['ingredients'] else []
+            d['ingredients'] = RecipeIngredient.get_for_recipe(d['id'])
             d['instructions'] = json.loads(d['instructions']) if d['instructions'] else []
             recipes.append(d)
         return recipes
@@ -160,7 +182,7 @@ class Recipe:
         recipe = cursor.fetchone()
         if recipe:
             d = row_to_dict(recipe)
-            d['ingredients'] = json.loads(d['ingredients']) if d['ingredients'] else []
+            d['ingredients'] = RecipeIngredient.get_for_recipe(recipe_id)
             d['instructions'] = json.loads(d['instructions']) if d['instructions'] else []
             return d
         return None
@@ -168,15 +190,20 @@ class Recipe:
     @staticmethod
     def create(name, ingredients=None, instructions=None):
         db = get_db()
-        ingredients_json = json.dumps(ingredients) if ingredients is not None else json.dumps([])
         instructions_json = json.dumps(instructions) if instructions is not None else json.dumps([])
-        cursor = db.execute('INSERT INTO recipes (name, ingredients, instructions) VALUES (?, ?, ?)',
-                            (name, ingredients_json, instructions_json))
+        cursor = db.execute('INSERT INTO recipes (name, instructions) VALUES (?, ?)',
+                            (name, instructions_json))
+        recipe_id = cursor.lastrowid
+
+        if ingredients:
+            for ingredient in ingredients:
+                RecipeIngredient.create(recipe_id, ingredient['name'], ingredient.get('quantity'))
+
         db.commit()
         return {
-            "id": cursor.lastrowid,
+            "id": recipe_id,
             "name": name,
-            "ingredients": json.loads(ingredients_json),
+            "ingredients": ingredients if ingredients else [],
             "instructions": json.loads(instructions_json)
         }
 
@@ -188,23 +215,30 @@ class Recipe:
         if name is not None:
             query_parts.append('name = ?')
             params.append(name)
-        if ingredients is not None:
-            query_parts.append('ingredients = ?')
-            params.append(json.dumps(ingredients))
         if instructions is not None:
             query_parts.append('instructions = ?')
             params.append(json.dumps(instructions))
-        if not query_parts:
-            return 0
-        query = 'UPDATE recipes SET ' + ', '.join(query_parts) + ' WHERE id = ?'
-        params.append(recipe_id)
-        cursor = db.execute(query, tuple(params))
+
+        if query_parts:
+            query = 'UPDATE recipes SET ' + ', '.join(query_parts) + ' WHERE id = ?'
+            params.append(recipe_id)
+            db.execute(query, tuple(params))
+
+        if ingredients is not None:
+            RecipeIngredient.delete_for_recipe(recipe_id)
+            for ingredient in ingredients:
+                RecipeIngredient.create(recipe_id, ingredient['name'], ingredient.get('quantity'))
+
         db.commit()
-        return cursor.rowcount
+        # Check if the recipe exists before claiming success
+        cursor = db.execute('SELECT id FROM recipes WHERE id = ?', (recipe_id,))
+        return 1 if cursor.fetchone() else 0
+
 
     @staticmethod
     def delete(recipe_id):
         db = get_db()
+        RecipeIngredient.delete_for_recipe(recipe_id)
         cursor = db.execute('DELETE FROM recipes WHERE id = ?', (recipe_id,))
         db.commit()
         return cursor.rowcount
