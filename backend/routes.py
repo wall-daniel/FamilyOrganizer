@@ -151,17 +151,54 @@ def get_grocery_items():
 
 @bp.route('/grocery_items', methods=['POST'])
 def add_grocery_item():
+    from models import parse_quantity_and_unit
+    
     new_item_data = request.json
     if not new_item_data or 'name' not in new_item_data:
         return jsonify({"error": "Name is required"}), 400
     
-    item = GroceryItem.create(
-        name=new_item_data['name'],
-        quantity=new_item_data.get('quantity', ''),
-        category=new_item_data.get('category', 'Other'),
-        is_completed=new_item_data.get('is_completed', False)
-    )
-    return jsonify(item), 201
+    name = new_item_data['name']
+    quantity_str = new_item_data.get('quantity', '')
+    category = new_item_data.get('category', 'Other')
+    is_completed = new_item_data.get('is_completed', False)
+    
+    # Parse quantity and unit from the incoming item
+    new_value, new_unit = parse_quantity_and_unit(quantity_str)
+    
+    # Check if an existing item with the same name and unit exists
+    existing_item = GroceryItem.find_by_name_and_unit(name, new_unit)
+    
+    if existing_item:
+        # Parse the existing item's quantity
+        existing_value, _ = parse_quantity_and_unit(existing_item['quantity'])
+        
+        # Combine quantities
+        combined_value = existing_value + new_value
+        
+        # Format the new quantity string
+        if new_unit:
+            new_quantity = f"{combined_value} {new_unit}"
+        else:
+            new_quantity = str(combined_value) if combined_value != 0 else ''
+        
+        # Update the existing item
+        GroceryItem.update(
+            existing_item['id'],
+            quantity=new_quantity
+        )
+        
+        # Return the updated item
+        updated_item = GroceryItem.get(existing_item['id'])
+        return jsonify(updated_item), 200
+    else:
+        # No existing item found, create a new one
+        item = GroceryItem.create(
+            name=name,
+            quantity=quantity_str,
+            category=category,
+            is_completed=is_completed
+        )
+        return jsonify(item), 201
 
 @bp.route('/grocery_items/<int:item_id>', methods=['GET'])
 def get_grocery_item(item_id):

@@ -4,6 +4,9 @@ import 'package:family_organizer/services/meal_service.dart';
 import 'package:family_organizer/models/meal.dart';
 import 'package:family_organizer/services/recipe_service.dart'; // Import RecipeService
 import 'package:family_organizer/models/recipe.dart'; // Import Recipe model
+import 'package:family_organizer/services/grocery_service.dart'; // Import GroceryService
+import 'package:family_organizer/models/grocery_item.dart'; // Import GroceryItem
+import 'package:family_organizer/models/ingredient.dart'; // Import Ingredient
 
 class MealPlanningScreen extends StatefulWidget {
   const MealPlanningScreen({super.key});
@@ -20,6 +23,7 @@ class _MealPlanningScreenState extends State<MealPlanningScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<MealService>(context, listen: false).fetchMeals();
+      Provider.of<RecipeService>(context, listen: false).fetchRecipes(); // Fetch recipes
     });
   }
 
@@ -76,84 +80,178 @@ class _MealPlanningScreenState extends State<MealPlanningScreen> {
     Recipe? selectedRecipe;
     String? selectedMealTime;
     final List<String> mealTimes = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
+    Set<Ingredient> _selectedIngredientsToAdd = {}; // State for selected ingredients
+    final PageController _pageController = PageController();
+    int _currentPage = 0;
 
     showDialog(
       context: context,
       builder: (context) {
         final recipeService = Provider.of<RecipeService>(context, listen: false);
+        final groceryService = Provider.of<GroceryService>(context, listen: false);
         final List<Recipe> availableRecipes = recipeService.recipes;
 
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
               title: const Text('Add New Meal'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+              content: SizedBox(
+                width: (MediaQuery.of(context).size.width * 0.4).clamp(400.0, double.infinity), // 40% width, min 400px
+                height: (MediaQuery.of(context).size.height * 0.3).clamp(300.0, double.infinity), // 30% height, min 300px
+                child: PageView(
+                  controller: _pageController,
+                  physics: const NeverScrollableScrollPhysics(), // Disable swiping
+                  onPageChanged: (index) {
+                    setState(() {
+                      _currentPage = index;
+                    });
+                  },
                   children: [
-                    if (availableRecipes.isNotEmpty) ...[
-                      DropdownButtonFormField<Recipe>(
-                        decoration: const InputDecoration(labelText: 'Select Recipe (Optional)'),
-                        value: selectedRecipe,
-                        items: availableRecipes.map((recipe) {
-                          return DropdownMenuItem<Recipe>(
-                            value: recipe,
-                            child: Text(recipe.name),
-                          );
-                        }).toList(),
-                        onChanged: (Recipe? recipe) {
-                          setState(() {
-                            selectedRecipe = recipe;
-                            if (selectedRecipe != null) {
-                              nameController.text = selectedRecipe!.name;
-                            } else {
-                              nameController.clear();
-                            }
-                          });
-                        },
+                    // Page 1: Meal Details
+                    SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (availableRecipes.isNotEmpty) ...[
+                            DropdownButtonFormField<Recipe>(
+                              decoration: InputDecoration(
+                                labelText: 'Select Recipe (Optional)',
+                                suffixIcon: selectedRecipe != null
+                                    ? IconButton(
+                                        icon: const Icon(Icons.clear),
+                                        onPressed: () {
+                                          setState(() {
+                                            selectedRecipe = null;
+                                            nameController.clear();
+                                            _selectedIngredientsToAdd.clear(); // Clear selected ingredients
+                                          });
+                                        },
+                                      )
+                                    : null,
+                              ),
+                              value: selectedRecipe,
+                              items: availableRecipes.map((recipe) {
+                                return DropdownMenuItem<Recipe>(
+                                  value: recipe,
+                                  child: Text(recipe.name),
+                                );
+                              }).toList(),
+                              onChanged: (Recipe? recipe) {
+                                setState(() {
+                                  selectedRecipe = recipe;
+                                  if (selectedRecipe != null) {
+                                    nameController.text = selectedRecipe!.name;
+                                    _selectedIngredientsToAdd = Set.from(selectedRecipe!.ingredients); // Pre-select all ingredients
+                                  } else {
+                                    nameController.clear();
+                                    _selectedIngredientsToAdd.clear();
+                                  }
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 10),
+                          ],
+                          TextField(
+                            controller: nameController,
+                            decoration: const InputDecoration(labelText: 'Meal Name'),
+                            enabled: selectedRecipe == null, // Disable if a recipe is selected
+                          ),
+                          const SizedBox(height: 10),
+                          DropdownButtonFormField<String>(
+                            decoration: const InputDecoration(labelText: 'Meal Time'),
+                            value: selectedMealTime,
+                            items: mealTimes.map((time) {
+                              return DropdownMenuItem<String>(
+                                value: time,
+                                child: Text(time),
+                              );
+                            }).toList(),
+                            onChanged: (String? time) {
+                              setState(() {
+                                selectedMealTime = time;
+                              });
+                            },
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 10),
-                    ],
-                    TextField(
-                      controller: nameController,
-                      decoration: const InputDecoration(labelText: 'Meal Name'),
                     ),
-                    const SizedBox(height: 10),
-                    DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(labelText: 'Meal Time'),
-                      value: selectedMealTime,
-                      items: mealTimes.map((time) {
-                        return DropdownMenuItem<String>(
-                          value: time,
-                          child: Text(time),
-                        );
-                      }).toList(),
-                      onChanged: (String? time) {
-                        setState(() {
-                          selectedMealTime = time;
-                        });
-                      },
-                    ),
+                    // Page 2: Ingredient Selection
+                    if (selectedRecipe != null && selectedRecipe!.ingredients.isNotEmpty)
+                      SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('Add Ingredients to Grocery List:', style: TextStyle(fontWeight: FontWeight.bold)),
+                            ...selectedRecipe!.ingredients.map((ingredient) {
+                              return CheckboxListTile(
+                                title: Text('${ingredient.name} (${ingredient.quantity ?? 'N/A'})'),
+                                value: _selectedIngredientsToAdd.contains(ingredient),
+                                onChanged: (bool? value) {
+                                  setState(() {
+                                    if (value == true) {
+                                      _selectedIngredientsToAdd.add(ingredient);
+                                    } else {
+                                      _selectedIngredientsToAdd.remove(ingredient);
+                                    }
+                                  });
+                                },
+                              );
+                            }).toList(),
+                          ],
+                        ),
+                      )
+                    else
+                      const Center(child: Text('No ingredients to display or no recipe selected.')),
                   ],
                 ),
               ),
-              actions: [
+              actions: <Widget>[
+                if (_currentPage == 1)
+                  TextButton(
+                    onPressed: () {
+                      _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.ease);
+                    },
+                    child: const Text('Back'),
+                  ),
                 TextButton(
                   onPressed: () => Navigator.pop(context),
                   child: const Text('Cancel'),
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    if (nameController.text.isNotEmpty && selectedMealTime != null) {
-                      final newMeal = Meal(
-                        name: nameController.text,
-                        date: scheduledDate.toIso8601String().split('T').first,
-                        recipeId: selectedRecipe?.id,
-                        mealTime: selectedMealTime,
-                      );
-                      mealService.addMeal(newMeal);
+                    if (_currentPage == 0) {
+                      if (selectedRecipe != null && selectedMealTime != null) {
+                        _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.ease);
+                      } else if (nameController.text.isNotEmpty && selectedMealTime != null) {
+                        final newMeal = Meal(
+                          name: nameController.text,
+                          date: scheduledDate.toIso8601String().split('T').first,
+                          mealTime: selectedMealTime,
+                        );
+                        mealService.addMeal(newMeal);
+                        Navigator.pop(context);
+                      }
+                    } else if (_currentPage == 1) {
+                      if (nameController.text.isNotEmpty && selectedMealTime != null) {
+                        final newMeal = Meal(
+                          name: nameController.text,
+                          date: scheduledDate.toIso8601String().split('T').first,
+                          recipeId: selectedRecipe?.id,
+                          mealTime: selectedMealTime,
+                        );
+                        mealService.addMeal(newMeal);
+
+                        // Add selected ingredients to grocery list
+                        for (var ingredient in _selectedIngredientsToAdd) {
+                          groceryService.addGroceryItem(GroceryItem(
+                            name: ingredient.name,
+                            quantity: ingredient.quantity ?? '',
+                            category: 'Recipe', // Assign a default category for recipe ingredients
+                          ));
+                        }
+                      }
+                      Navigator.pop(context);
                     }
-                    Navigator.pop(context);
                   },
                   child: const Text('Add'),
                 ),

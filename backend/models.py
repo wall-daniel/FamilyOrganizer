@@ -1,5 +1,24 @@
 from database import get_db, row_to_dict
 import json
+import re
+
+def parse_quantity_and_unit(quantity_str):
+    """Parses a quantity string into a numerical value and a unit."""
+    if not quantity_str:
+        return 0.0, ''
+
+    # Regex to find a number (integer or float) and an optional unit
+    match = re.match(r'(\d+(\.\d+)?)\s*([a-zA-Z]+)?', quantity_str.strip())
+    if match:
+        value = float(match.group(1))
+        unit = (match.group(3) or '').strip().lower()
+        return value, unit
+    
+    # If no number found, try to convert the whole string to a number
+    try:
+        return float(quantity_str.strip()), ''
+    except ValueError:
+        return 0.0, quantity_str.strip().lower() # Treat as a unit if not a number
 
 class Task:
     def __init__(self, id=None, title=None, description=None, completed=False):
@@ -311,3 +330,25 @@ class GroceryItem:
         cursor = db.execute('DELETE FROM grocery_items WHERE id = ?', (item_id,))
         db.commit()
         return cursor.rowcount
+
+    @staticmethod
+    def find_by_name_and_unit(name, unit):
+        """Finds an existing grocery item by normalized name and unit."""
+        db = get_db()
+        normalized_name = name.strip().lower().replace(' ', '')
+        
+        # Get all grocery items and check for matches
+        cursor = db.execute('SELECT * FROM grocery_items')
+        for row in cursor.fetchall():
+            item = row_to_dict(row)
+            item_normalized_name = item['name'].strip().lower().replace(' ', '')
+            
+            if item_normalized_name == normalized_name:
+                # Parse the quantity and unit of the existing item
+                _, item_unit = parse_quantity_and_unit(item['quantity'])
+                
+                # Check if units match (both empty or both the same)
+                if item_unit == unit:
+                    return item
+        
+        return None
