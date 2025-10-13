@@ -1,354 +1,139 @@
-from database import get_db, row_to_dict
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, ForeignKey, Text
+from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.ext.declarative import declarative_base
+from werkzeug.security import generate_password_hash, check_password_hash
+from database import Base
 import json
-import re
 
-def parse_quantity_and_unit(quantity_str):
-    """Parses a quantity string into a numerical value and a unit."""
-    if not quantity_str:
-        return 0.0, ''
+class Family(Base):
+    __tablename__ = 'families'
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False)
+    users = relationship('User', back_populates='family')
+    tasks = relationship('Task', back_populates='family')
+    grocery_items = relationship('GroceryItem', back_populates='family')
+    meals = relationship('Meal', back_populates='family')
+    recipes = relationship('Recipe', back_populates='family')
 
-    # Regex to find a number (integer or float) and an optional unit
-    match = re.match(r'(\d+(\.\d+)?)\s*([a-zA-Z]+)?', quantity_str.strip())
-    if match:
-        value = float(match.group(1))
-        unit = (match.group(3) or '').strip().lower()
-        return value, unit
-    
-    # If no number found, try to convert the whole string to a number
-    try:
-        return float(quantity_str.strip()), ''
-    except ValueError:
-        return 0.0, quantity_str.strip().lower() # Treat as a unit if not a number
-
-class Task:
-    def __init__(self, id=None, title=None, description=None, completed=False):
-        self.id = id
-        self.title = title
-        self.description = description
-        self.completed = completed
-
-    @staticmethod
-    def all():
-        db = get_db()
-        cursor = db.execute('SELECT * FROM tasks')
-        return [row_to_dict(row) for row in cursor.fetchall()]
-
-    @staticmethod
-    def get(task_id):
-        db = get_db()
-        cursor = db.execute('SELECT * FROM tasks WHERE id = ?', (task_id,))
-        task = cursor.fetchone()
-        return row_to_dict(task) if task else None
-
-    @staticmethod
-    def create(title, description='', completed=False):
-        db = get_db()
-        cursor = db.execute('INSERT INTO tasks (title, description, completed) VALUES (?, ?, ?)',
-                            (title, description, completed))
-        db.commit()
+    def to_dict(self):
         return {
-            "id": cursor.lastrowid,
-            "title": title,
-            "description": description,
-            "completed": completed
+            'id': self.id,
+            'name': self.name
         }
 
-    @staticmethod
-    def update(task_id, title=None, description=None, completed=None):
-        db = get_db()
-        query_parts = []
-        params = []
-        if title is not None:
-            query_parts.append('title = ?')
-            params.append(title)
-        if description is not None:
-            query_parts.append('description = ?')
-            params.append(description)
-        if completed is not None:
-            query_parts.append('completed = ?')
-            params.append(completed)
+class User(Base):
+    __tablename__ = 'users'
+    id = Column(Integer, primary_key=True)
+    username = Column(String(80), unique=True, nullable=False)
+    password_hash = Column(String(128))
+    family_id = Column(Integer, ForeignKey('families.id'), nullable=False)
+    family = relationship('Family', back_populates='users')
+    tasks = relationship('Task', back_populates='user')
 
-        if not query_parts:
-            return 0 # No fields to update
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
 
-        query = 'UPDATE tasks SET ' + ', '.join(query_parts) + ' WHERE id = ?'
-        params.append(task_id)
-        cursor = db.execute(query, tuple(params))
-        db.commit()
-        return cursor.rowcount
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
 
-    @staticmethod
-    def delete(task_id):
-        db = get_db()
-        cursor = db.execute('DELETE FROM tasks WHERE id = ?', (task_id,))
-        db.commit()
-        return cursor.rowcount
-
-class Meal:
-    def __init__(self, id=None, name=None, date=None, recipe_id=None, meal_time=None):
-        self.id = id
-        self.name = name
-        self.date = date
-        self.recipe_id = recipe_id
-        self.meal_time = meal_time
-
-    @staticmethod
-    def all():
-        db = get_db()
-        cursor = db.execute('SELECT * FROM meals')
-        return [row_to_dict(row) for row in cursor.fetchall()]
-
-    @staticmethod
-    def get(meal_id):
-        db = get_db()
-        cursor = db.execute('SELECT * FROM meals WHERE id = ?', (meal_id,))
-        meal = cursor.fetchone()
-        return row_to_dict(meal) if meal else None
-
-    @staticmethod
-    def create(name, date='', recipe_id=None, meal_time=None):
-        db = get_db()
-        cursor = db.execute('INSERT INTO meals (name, date, recipe_id, meal_time) VALUES (?, ?, ?, ?)',
-                            (name, date, recipe_id, meal_time))
-        db.commit()
+    def to_dict(self):
         return {
-            "id": cursor.lastrowid,
-            "name": name,
-            "date": date,
-            "recipe_id": recipe_id,
-            "meal_time": meal_time
+            'id': self.id,
+            'username': self.username,
+            'family_id': self.family_id
         }
 
-    @staticmethod
-    def update(meal_id, name=None, date=None, recipe_id=None, meal_time=None):
-        db = get_db()
-        query_parts = []
-        params = []
-        if name is not None:
-            query_parts.append('name = ?')
-            params.append(name)
-        if date is not None:
-            query_parts.append('date = ?')
-            params.append(date)
-        if recipe_id is not None:
-            query_parts.append('recipe_id = ?')
-            params.append(recipe_id)
-        if meal_time is not None:
-            query_parts.append('meal_time = ?')
-            params.append(meal_time)
+class Task(Base):
+    __tablename__ = 'tasks'
+    id = Column(Integer, primary_key=True)
+    title = Column(String(120), nullable=False)
+    description = Column(Text)
+    completed = Column(Boolean, default=False)
+    family_id = Column(Integer, ForeignKey('families.id'), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'))
+    family = relationship('Family', back_populates='tasks')
+    user = relationship('User', back_populates='tasks')
 
-        if not query_parts:
-            return 0
-
-        query = 'UPDATE meals SET ' + ', '.join(query_parts) + ' WHERE id = ?'
-        params.append(meal_id)
-        cursor = db.execute(query, tuple(params))
-        db.commit()
-        return cursor.rowcount
-
-    @staticmethod
-    def delete(meal_id):
-        db = get_db()
-        cursor = db.execute('DELETE FROM meals WHERE id = ?', (meal_id,))
-        db.commit()
-        return cursor.rowcount
-
-class RecipeIngredient:
-    @staticmethod
-    def get_for_recipe(recipe_id):
-        db = get_db()
-        cursor = db.execute('SELECT id, name, quantity FROM recipe_ingredients WHERE recipe_id = ?', (recipe_id,))
-        return [row_to_dict(row) for row in cursor.fetchall()]
-
-    @staticmethod
-    def create(recipe_id, name, quantity=None):
-        db = get_db()
-        cursor = db.execute('INSERT INTO recipe_ingredients (recipe_id, name, quantity) VALUES (?, ?, ?)',
-                            (recipe_id, name, quantity))
-        db.commit()
-        return cursor.lastrowid
-
-    @staticmethod
-    def delete_for_recipe(recipe_id):
-        db = get_db()
-        cursor = db.execute('DELETE FROM recipe_ingredients WHERE recipe_id = ?', (recipe_id,))
-        db.commit()
-        return cursor.rowcount
-
-
-class Recipe:
-    def __init__(self, id=None, name=None, instructions=None):
-        self.id = id
-        self.name = name
-        self.instructions = instructions if instructions is not None else []
-
-    @staticmethod
-    def all():
-        db = get_db()
-        cursor = db.execute('SELECT * FROM recipes')
-        recipes = []
-        for row in cursor.fetchall():
-            d = row_to_dict(row)
-            d['ingredients'] = RecipeIngredient.get_for_recipe(d['id'])
-            d['instructions'] = json.loads(d['instructions']) if d['instructions'] else []
-            recipes.append(d)
-        return recipes
-
-    @staticmethod
-    def get(recipe_id):
-        db = get_db()
-        cursor = db.execute('SELECT * FROM recipes WHERE id = ?', (recipe_id,))
-        recipe = cursor.fetchone()
-        if recipe:
-            d = row_to_dict(recipe)
-            d['ingredients'] = RecipeIngredient.get_for_recipe(recipe_id)
-            d['instructions'] = json.loads(d['instructions']) if d['instructions'] else []
-            return d
-        return None
-
-    @staticmethod
-    def create(name, ingredients=None, instructions=None):
-        db = get_db()
-        instructions_json = json.dumps(instructions) if instructions is not None else json.dumps([])
-        cursor = db.execute('INSERT INTO recipes (name, instructions) VALUES (?, ?)',
-                            (name, instructions_json))
-        recipe_id = cursor.lastrowid
-
-        if ingredients:
-            for ingredient in ingredients:
-                RecipeIngredient.create(recipe_id, ingredient['name'], ingredient.get('quantity'))
-
-        db.commit()
+    def to_dict(self):
         return {
-            "id": recipe_id,
-            "name": name,
-            "ingredients": ingredients if ingredients else [],
-            "instructions": json.loads(instructions_json)
+            'id': self.id,
+            'title': self.title,
+            'description': self.description,
+            'completed': self.completed,
+            'family_id': self.family_id,
+            'user_id': self.user_id
         }
 
-    @staticmethod
-    def update(recipe_id, name=None, ingredients=None, instructions=None):
-        db = get_db()
-        query_parts = []
-        params = []
-        if name is not None:
-            query_parts.append('name = ?')
-            params.append(name)
-        if instructions is not None:
-            query_parts.append('instructions = ?')
-            params.append(json.dumps(instructions))
+class GroceryItem(Base):
+    __tablename__ = 'grocery_items'
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False)
+    quantity = Column(String(50))
+    category = Column(String(50), default='Other')
+    is_completed = Column(Boolean, default=False)
+    family_id = Column(Integer, ForeignKey('families.id'), nullable=False)
+    family = relationship('Family', back_populates='grocery_items')
 
-        if query_parts:
-            query = 'UPDATE recipes SET ' + ', '.join(query_parts) + ' WHERE id = ?'
-            params.append(recipe_id)
-            db.execute(query, tuple(params))
-
-        if ingredients is not None:
-            RecipeIngredient.delete_for_recipe(recipe_id)
-            for ingredient in ingredients:
-                RecipeIngredient.create(recipe_id, ingredient['name'], ingredient.get('quantity'))
-
-        db.commit()
-        # Check if the recipe exists before claiming success
-        cursor = db.execute('SELECT id FROM recipes WHERE id = ?', (recipe_id,))
-        return 1 if cursor.fetchone() else 0
-
-
-    @staticmethod
-    def delete(recipe_id):
-        db = get_db()
-        RecipeIngredient.delete_for_recipe(recipe_id)
-        cursor = db.execute('DELETE FROM recipes WHERE id = ?', (recipe_id,))
-        db.commit()
-        return cursor.rowcount
-
-class GroceryItem:
-    def __init__(self, id=None, name=None, quantity='', category='Other', is_completed=False):
-        self.id = id
-        self.name = name
-        self.quantity = quantity
-        self.category = category
-        self.is_completed = is_completed
-
-    @staticmethod
-    def all():
-        db = get_db()
-        cursor = db.execute('SELECT * FROM grocery_items')
-        return [row_to_dict(row) for row in cursor.fetchall()]
-
-    @staticmethod
-    def get(item_id):
-        db = get_db()
-        cursor = db.execute('SELECT * FROM grocery_items WHERE id = ?', (item_id,))
-        item = cursor.fetchone()
-        return row_to_dict(item) if item else None
-
-    @staticmethod
-    def create(name, quantity='', category='Other', is_completed=False):
-        db = get_db()
-        cursor = db.execute('INSERT INTO grocery_items (name, quantity, category, is_completed) VALUES (?, ?, ?, ?)',
-                            (name, quantity, category, is_completed))
-        db.commit()
+    def to_dict(self):
         return {
-            "id": cursor.lastrowid,
-            "name": name,
-            "quantity": quantity,
-            "category": category,
-            "is_completed": is_completed
+            'id': self.id,
+            'name': self.name,
+            'quantity': self.quantity,
+            'category': self.category,
+            'is_completed': self.is_completed,
+            'family_id': self.family_id
         }
 
-    @staticmethod
-    def update(item_id, name=None, quantity=None, category=None, is_completed=None):
-        db = get_db()
-        query_parts = []
-        params = []
-        if name is not None:
-            query_parts.append('name = ?')
-            params.append(name)
-        if quantity is not None:
-            query_parts.append('quantity = ?')
-            params.append(quantity)
-        if category is not None:
-            query_parts.append('category = ?')
-            params.append(category)
-        if is_completed is not None:
-            query_parts.append('is_completed = ?')
-            params.append(is_completed)
+class Meal(Base):
+    __tablename__ = 'meals'
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False)
+    date = Column(String(20))
+    recipe_id = Column(Integer, ForeignKey('recipes.id'))
+    meal_time = Column(String(20))
+    family_id = Column(Integer, ForeignKey('families.id'), nullable=False)
+    family = relationship('Family', back_populates='meals')
+    recipe = relationship('Recipe')
 
-        if not query_parts:
-            return 0
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'date': self.date,
+            'recipe_id': self.recipe_id,
+            'meal_time': self.meal_time,
+            'family_id': self.family_id
+        }
 
-        query = 'UPDATE grocery_items SET ' + ', '.join(query_parts) + ' WHERE id = ?'
-        params.append(item_id)
-        cursor = db.execute(query, tuple(params))
-        db.commit()
-        return cursor.rowcount
+class Recipe(Base):
+    __tablename__ = 'recipes'
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False)
+    instructions = Column(Text)
+    family_id = Column(Integer, ForeignKey('families.id'), nullable=False)
+    family = relationship('Family', back_populates='recipes')
+    ingredients = relationship('RecipeIngredient', back_populates='recipe', cascade="all, delete-orphan")
 
-    @staticmethod
-    def delete(item_id):
-        db = get_db()
-        cursor = db.execute('DELETE FROM grocery_items WHERE id = ?', (item_id,))
-        db.commit()
-        return cursor.rowcount
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'instructions': json.loads(self.instructions) if self.instructions else [],
+            'family_id': self.family_id,
+            'ingredients': [ingredient.to_dict() for ingredient in self.ingredients]
+        }
 
-    @staticmethod
-    def find_by_name_and_unit(name, unit):
-        """Finds an existing grocery item by normalized name and unit."""
-        db = get_db()
-        normalized_name = name.strip().lower().replace(' ', '')
-        
-        # Get all grocery items and check for matches
-        cursor = db.execute('SELECT * FROM grocery_items')
-        for row in cursor.fetchall():
-            item = row_to_dict(row)
-            item_normalized_name = item['name'].strip().lower().replace(' ', '')
-            
-            if item_normalized_name == normalized_name:
-                # Parse the quantity and unit of the existing item
-                _, item_unit = parse_quantity_and_unit(item['quantity'])
-                
-                # Check if units match (both empty or both the same)
-                if item_unit == unit:
-                    return item
-        
-        return None
+class RecipeIngredient(Base):
+    __tablename__ = 'recipe_ingredients'
+    id = Column(Integer, primary_key=True)
+    recipe_id = Column(Integer, ForeignKey('recipes.id'), nullable=False)
+    name = Column(String(100), nullable=False)
+    quantity = Column(String(50))
+    recipe = relationship('Recipe', back_populates='ingredients')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'quantity': self.quantity
+        }

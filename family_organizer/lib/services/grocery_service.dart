@@ -3,16 +3,29 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:family_organizer/models/grocery_item.dart';
 import 'package:family_organizer/common/api_config.dart'; // Import ApiConfig
+import 'package:family_organizer/services/auth_service.dart';
 
 class GroceryService extends ChangeNotifier {
   final String _baseUrl = ApiConfig.baseUrl; // Use central API config
   final List<GroceryItem> _groceryItems = [];
+  final AuthService _authService = AuthService();
 
   List<GroceryItem> get groceryItems => _groceryItems;
 
+  Future<Map<String, String>> _getHeaders() async {
+    String? token = await _authService.getToken();
+    return {
+      'Content-Type': 'application/json',
+      'x-access-token': token ?? '',
+    };
+  }
+
   Future<void> fetchGroceryItems() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/grocery_items'));
+      final response = await http.get(
+        Uri.parse('$_baseUrl/grocery_items'),
+        headers: await _getHeaders(),
+      );
       if (response.statusCode == 200) {
         Iterable l = json.decode(response.body);
         _groceryItems.clear();
@@ -31,7 +44,7 @@ class GroceryService extends ChangeNotifier {
     try {
       final response = await http.post(
         Uri.parse('$_baseUrl/grocery_items'),
-        headers: {'Content-Type': 'application/json'},
+        headers: await _getHeaders(),
         body: json.encode(item.toJson()),
       );
       if (response.statusCode == 201) {
@@ -55,7 +68,7 @@ class GroceryService extends ChangeNotifier {
       try {
         final response = await http.put(
           Uri.parse('$_baseUrl/grocery_items/$id'),
-          headers: {'Content-Type': 'application/json'},
+          headers: await _getHeaders(),
           body: json.encode(itemToUpdate.toJson()),
         );
         if (response.statusCode == 200) {
@@ -75,7 +88,10 @@ class GroceryService extends ChangeNotifier {
 
   Future<void> removeGroceryItem(int id) async {
     try {
-      final response = await http.delete(Uri.parse('$_baseUrl/grocery_items/$id'));
+      final response = await http.delete(
+        Uri.parse('$_baseUrl/grocery_items/$id'),
+        headers: await _getHeaders(),
+      );
       if (response.statusCode == 200) {
         _groceryItems.removeWhere((item) => item.id == id);
         notifyListeners();

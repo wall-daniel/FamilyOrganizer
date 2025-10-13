@@ -3,16 +3,29 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:family_organizer/models/meal.dart';
 import 'package:family_organizer/common/api_config.dart'; // Import ApiConfig
+import 'package:family_organizer/services/auth_service.dart';
 
 class MealService extends ChangeNotifier {
   final String _baseUrl = ApiConfig.baseUrl; // Use central API config
   final List<Meal> _meals = [];
+  final AuthService _authService = AuthService();
 
   List<Meal> get meals => _meals;
 
+  Future<Map<String, String>> _getHeaders() async {
+    String? token = await _authService.getToken();
+    return {
+      'Content-Type': 'application/json',
+      'x-access-token': token ?? '',
+    };
+  }
+
   Future<void> fetchMeals() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/meals'));
+      final response = await http.get(
+        Uri.parse('$_baseUrl/meals'),
+        headers: await _getHeaders(),
+      );
       if (response.statusCode == 200) {
         Iterable l = json.decode(response.body);
         _meals.clear();
@@ -31,7 +44,7 @@ class MealService extends ChangeNotifier {
     try {
       final response = await http.post(
         Uri.parse('$_baseUrl/meals'),
-        headers: {'Content-Type': 'application/json'},
+        headers: await _getHeaders(),
         body: json.encode(meal.toJson()),
       );
       if (response.statusCode == 201) {
@@ -54,7 +67,7 @@ class MealService extends ChangeNotifier {
     try {
       final response = await http.put(
         Uri.parse('$_baseUrl/meals/${meal.id}'),
-        headers: {'Content-Type': 'application/json'},
+        headers: await _getHeaders(),
         body: json.encode(meal.toJson()),
       );
       if (response.statusCode == 200) {
@@ -73,7 +86,10 @@ class MealService extends ChangeNotifier {
 
   Future<void> removeMeal(int id) async {
     try {
-      final response = await http.delete(Uri.parse('$_baseUrl/meals/$id'));
+      final response = await http.delete(
+        Uri.parse('$_baseUrl/meals/$id'),
+        headers: await _getHeaders(),
+      );
       if (response.statusCode == 200) {
         _meals.removeWhere((meal) => meal.id == id);
         notifyListeners();
