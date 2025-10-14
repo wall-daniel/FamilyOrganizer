@@ -42139,7 +42139,7 @@ A.hJ.prototype={
 vb(a,b){return this.anc(a,b)},
 anc(a,b){var s=0,r=A.U(t.T),q,p=this,o,n,m,l
 var $async$vb=A.P(function(c,d){if(c===1)return A.R(d,r)
-while(true)switch(s){case 0:o=A.d_("http://localhost:8080/api/login")
+while(true)switch(s){case 0:o=A.d_("https://dannywall.duckdns.org/api/login")
 n=t.N
 m=A.ah(["Content-Type","application/json; charset=UTF-8"],n,n)
 s=3
@@ -42166,7 +42166,7 @@ return A.T($async$vb,r)},
 B4(a,b,c,d){return this.ap2(0,b,c,d)},
 ap2(a,b,c,d){var s=0,r=A.U(t.T),q,p,o,n,m
 var $async$B4=A.P(function(e,f){if(e===1)return A.R(f,r)
-while(true)switch(s){case 0:p=A.d_("http://localhost:8080/api/register")
+while(true)switch(s){case 0:p=A.d_("https://dannywall.duckdns.org/api/register")
 o=t.N
 n=A.ah(["Content-Type","application/json; charset=UTF-8"],o,o)
 s=3
