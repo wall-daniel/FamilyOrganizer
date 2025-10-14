@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:family_organizer/common/api_config.dart';
 
 class AuthService {
-  final String _baseUrl = 'http://localhost:8080/api'; // Adjust for your backend URL
+  final String _baseUrl = ApiConfig.baseUrl; // Use central API config
   final _storage = new FlutterSecureStorage();
 
   Future<String?> login(String username, String password) async {
