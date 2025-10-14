@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:family_organizer/services/auth_service.dart';
+import 'package:family_organizer/features/dashboard/dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -10,11 +13,19 @@ class _LoginScreenState extends State<LoginScreen> {
   String _username = '';
   String _password = '';
 
-  void _login() {
+  void _login() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      // TODO: Implement login logic
-      print('Username: $_username, Password: $_password');
+      final authService = Provider.of<AuthService>(context, listen: false);
+      String? errorMessage = await authService.login(_username, _password);
+
+      if (errorMessage == null) {
+        Navigator.of(context).pushReplacementNamed(DashboardScreen.routeName);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage)),
+        );
+      }
     }
   }
 
@@ -59,6 +70,12 @@ class _LoginScreenState extends State<LoginScreen> {
               ElevatedButton(
                 onPressed: _login,
                 child: Text('Login'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pushNamed('/register');
+                },
+                child: Text('Don\'t have an account? Register'),
               ),
             ],
           ),

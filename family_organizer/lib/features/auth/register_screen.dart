@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:family_organizer/services/auth_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   @override
@@ -11,11 +13,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String _username = '';
   String _password = '';
 
-  void _register() {
+  void _register() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      // TODO: Implement registration logic
-      print('Family Name: $_familyName, Username: $_username, Password: $_password');
+      final authService = Provider.of<AuthService>(context, listen: false);
+      String? errorMessage = await authService.register(_familyName, _username, _password);
+
+      if (errorMessage == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Registration successful! Please log in.')),
+        );
+        Navigator.of(context).pop(); // Go back to login screen
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage)),
+        );
+      }
     }
   }
 

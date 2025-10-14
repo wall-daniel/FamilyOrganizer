@@ -9,7 +9,7 @@ def create_app():
 
     init_app(app)
     app.register_blueprint(api_bp)
-    CORS(app)  # Enable CORS for all routes
+    CORS(app, resources={r"/api/*": {"origins": "*"}})  # Enable CORS for all /api routes
 
     @app.route('/')
     def hello():

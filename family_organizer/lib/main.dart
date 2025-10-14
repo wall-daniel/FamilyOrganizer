@@ -42,7 +42,6 @@ class MyApp extends StatelessWidget {
       ),
       home: AuthWrapper(),
       routes: {
-        DashboardScreen.routeName: (context) => const DashboardScreen(),
         TasksScreen.routeName: (context) => const TasksScreen(),
         MealPlanningScreen.routeName: (context) => const MealPlanningScreen(),
         GroceryListScreen.routeName: (context) => const GroceryListScreen(),

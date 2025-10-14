@@ -6,11 +6,11 @@ class AuthService {
   final String _baseUrl = 'http://localhost:8080/api'; // Adjust for your backend URL
   final _storage = new FlutterSecureStorage();
 
-  Future<bool> login(String username, String password) async {
+  Future<String?> login(String username, String password) async {
     final response = await http.post(
       Uri.parse('$_baseUrl/login'),
       headers: <String, String>{
-        'Content-Type': 'application/json; charset=UTF-T',
+        'Content-Type': 'application/json; charset=UTF-8',
       },
       body: jsonEncode(<String, String>{
         'username': username,
@@ -21,13 +21,14 @@ class AuthService {
     if (response.statusCode == 200) {
       String token = jsonDecode(response.body)['token'];
       await _storage.write(key: 'token', value: token);
-      return true;
+      return null; // Success, no error message
     } else {
-      return false;
+      final errorData = jsonDecode(response.body);
+      return errorData['message'] ?? 'An unknown error occurred during login.';
     }
   }
 
-  Future<bool> register(String familyName, String username, String password) async {
+  Future<String?> register(String familyName, String username, String password) async {
     final response = await http.post(
       Uri.parse('$_baseUrl/register'),
       headers: <String, String>{
@@ -41,9 +42,10 @@ class AuthService {
     );
 
     if (response.statusCode == 201) {
-      return true;
+      return null; // Success, no error message
     } else {
-      return false;
+      final errorData = jsonDecode(response.body);
+      return errorData['message'] ?? 'An unknown error occurred during registration.';
     }
   }
 
