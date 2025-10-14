@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, g, current_app
 from models import Task, Meal, Recipe, GroceryItem, User, Family
-from database import db_session
+from database import get_db, row_to_dict
 from auth import token_required
 import jwt
 import datetime
@@ -19,19 +19,19 @@ def register():
     if not all([family_name, username, password]):
         return jsonify({'message': 'Missing family_name, username, or password'}), 400
 
-    if User.query.filter_by(username=username).first():
+    if User.get_by_username(username):
         return jsonify({'message': 'Username already exists'}), 400
 
-    family = Family.query.filter_by(name=family_name).first()
+    family = Family.get_by_name(family_name)
     if not family:
-        family = Family(name=family_name)
-        db_session.add(family)
-        db_session.commit()
+        family = Family.create(name=family_name)
+        family_id = family['id']
+    else:
+        family_id = family['id']
 
-    new_user = User(username=username, family_id=family.id)
+    new_user = User()
     new_user.set_password(password)
-    db_session.add(new_user)
-    db_session.commit()
+    user_data = User.create(username=username, password_hash=new_user.password_hash, family_id=family_id)
 
     return jsonify({'message': 'New user created!'}), 201
 
@@ -42,13 +42,13 @@ def login():
     if not auth or not auth.username or not auth.password:
         return jsonify({'message': 'Could not verify'}), 401
 
-    user = User.query.filter_by(username=auth.username).first()
+    user = User.get_by_username(auth.username)
 
-    if not user or not user.check_password(auth.password):
+    if not user or not User().check_password(user['password_hash'], auth.password):
         return jsonify({'message': 'Could not verify'}), 401
 
     token = jwt.encode({
-        'id': user.id,
+        'id': user['id'],
         'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)
     }, current_app.config['SECRET_KEY'], algorithm="HS256")
 
@@ -58,8 +58,8 @@ def login():
 @bp.route('/tasks', methods=['GET'])
 @token_required
 def get_tasks():
-    tasks = Task.query.filter_by(family_id=g.current_user.family_id).all()
-    return jsonify([task.to_dict() for task in tasks])
+    tasks = Task.all(g.current_user['family_id'])
+    return jsonify(tasks)
 
 @bp.route('/tasks', methods=['POST'])
 @token_required
@@ -68,60 +68,52 @@ def add_task():
     if not new_task_data or 'title' not in new_task_data:
         return jsonify({"error": "Title is required"}), 400
     
-    task = Task(
+    task = Task.create(
         title=new_task_data['title'],
         description=new_task_data.get('description', ''),
         completed=new_task_data.get('completed', False),
-        family_id=g.current_user.family_id,
-        user_id=g.current_user.id
+        family_id=g.current_user['family_id'],
+        user_id=g.current_user['id']
     )
-    db_session.add(task)
-    db_session.commit()
-    return jsonify(task.to_dict()), 201
+    return jsonify(task), 201
 
 @bp.route('/tasks/<int:task_id>', methods=['GET'])
 @token_required
 def get_task(task_id):
-    task = Task.query.filter_by(id=task_id, family_id=g.current_user.family_id).first()
+    task = Task.get(task_id, g.current_user['family_id'])
     if task:
-        return jsonify(task.to_dict())
+        return jsonify(task)
     return jsonify({"error": "Task not found"}), 404
 
 @bp.route('/tasks/<int:task_id>', methods=['PUT'])
 @token_required
 def update_task(task_id):
-    task = Task.query.filter_by(id=task_id, family_id=g.current_user.family_id).first()
-    if not task:
-        return jsonify({"error": "Task not found"}), 404
-    
     updated_data = request.json
-    if 'title' in updated_data:
-        task.title = updated_data['title']
-    if 'description' in updated_data:
-        task.description = updated_data['description']
-    if 'completed' in updated_data:
-        task.completed = updated_data['completed']
-    
-    db_session.commit()
+    row_count = Task.update(
+        task_id,
+        g.current_user['family_id'],
+        title=updated_data.get('title'),
+        description=updated_data.get('description'),
+        completed=updated_data.get('completed')
+    )
+    if row_count == 0:
+        return jsonify({"error": "Task not found"}), 404
     return jsonify({"message": "Task updated successfully"})
 
 @bp.route('/tasks/<int:task_id>', methods=['DELETE'])
 @token_required
 def delete_task(task_id):
-    task = Task.query.filter_by(id=task_id, family_id=g.current_user.family_id).first()
-    if not task:
+    row_count = Task.delete(task_id, g.current_user['family_id'])
+    if row_count == 0:
         return jsonify({"error": "Task not found"}), 404
-    
-    db_session.delete(task)
-    db_session.commit()
     return jsonify({"message": "Task deleted successfully"})
 
 # --- Meal Endpoints ---
 @bp.route('/meals', methods=['GET'])
 @token_required
 def get_meals():
-    meals = Meal.query.filter_by(family_id=g.current_user.family_id).all()
-    return jsonify([meal.to_dict() for meal in meals])
+    meals = Meal.all(g.current_user['family_id'])
+    return jsonify(meals)
 
 @bp.route('/meals', methods=['POST'])
 @token_required
@@ -130,62 +122,53 @@ def add_meal():
     if not new_meal_data or 'name' not in new_meal_data:
         return jsonify({"error": "Meal name is required"}), 400
     
-    meal = Meal(
+    meal = Meal.create(
         name=new_meal_data['name'],
         date=new_meal_data.get('date', ''),
         recipe_id=new_meal_data.get('recipe_id'),
         meal_time=new_meal_data.get('meal_time'),
-        family_id=g.current_user.family_id
+        family_id=g.current_user['family_id']
     )
-    db_session.add(meal)
-    db_session.commit()
-    return jsonify(meal.to_dict()), 201
+    return jsonify(meal), 201
 
 @bp.route('/meals/<int:meal_id>', methods=['GET'])
 @token_required
 def get_meal(meal_id):
-    meal = Meal.query.filter_by(id=meal_id, family_id=g.current_user.family_id).first()
+    meal = Meal.get(meal_id, g.current_user['family_id'])
     if meal:
-        return jsonify(meal.to_dict())
+        return jsonify(meal)
     return jsonify({"error": "Meal not found"}), 404
 
 @bp.route('/meals/<int:meal_id>', methods=['PUT'])
 @token_required
 def update_meal(meal_id):
-    meal = Meal.query.filter_by(id=meal_id, family_id=g.current_user.family_id).first()
-    if not meal:
-        return jsonify({"error": "Meal not found"}), 404
-        
     updated_data = request.json
-    if 'name' in updated_data:
-        meal.name = updated_data['name']
-    if 'date' in updated_data:
-        meal.date = updated_data['date']
-    if 'recipe_id' in updated_data:
-        meal.recipe_id = updated_data['recipe_id']
-    if 'meal_time' in updated_data:
-        meal.meal_time = updated_data['meal_time']
-        
-    db_session.commit()
+    row_count = Meal.update(
+        meal_id,
+        g.current_user['family_id'],
+        name=updated_data.get('name'),
+        date=updated_data.get('date'),
+        recipe_id=updated_data.get('recipe_id'),
+        meal_time=updated_data.get('meal_time')
+    )
+    if row_count == 0:
+        return jsonify({"error": "Meal not found"}), 404
     return jsonify({"message": "Meal updated successfully"})
 
 @bp.route('/meals/<int:meal_id>', methods=['DELETE'])
 @token_required
 def delete_meal(meal_id):
-    meal = Meal.query.filter_by(id=meal_id, family_id=g.current_user.family_id).first()
-    if not meal:
+    row_count = Meal.delete(meal_id, g.current_user['family_id'])
+    if row_count == 0:
         return jsonify({"error": "Meal not found"}), 404
-    
-    db_session.delete(meal)
-    db_session.commit()
     return jsonify({"message": "Meal deleted successfully"})
 
 # --- Recipe Endpoints ---
 @bp.route('/recipes', methods=['GET'])
 @token_required
 def get_recipes():
-    recipes = Recipe.query.filter_by(family_id=g.current_user.family_id).all()
-    return jsonify([recipe.to_dict() for recipe in recipes])
+    recipes = Recipe.all(g.current_user['family_id'])
+    return jsonify(recipes)
 
 @bp.route('/recipes', methods=['POST'])
 @token_required
@@ -194,112 +177,134 @@ def add_recipe():
     if not new_recipe_data or 'name' not in new_recipe_data:
         return jsonify({"error": "Recipe name is required"}), 400
     
-    recipe = Recipe(
+    recipe = Recipe.create(
         name=new_recipe_data['name'],
+        ingredients=new_recipe_data.get('ingredients', []),
         instructions=new_recipe_data.get('instructions', []),
-        family_id=g.current_user.family_id
+        family_id=g.current_user['family_id']
     )
-    db_session.add(recipe)
-    db_session.commit()
-    return jsonify(recipe.to_dict()), 201
+    return jsonify(recipe), 201
 
 @bp.route('/recipes/<int:recipe_id>', methods=['GET'])
 @token_required
 def get_recipe(recipe_id):
-    recipe = Recipe.query.filter_by(id=recipe_id, family_id=g.current_user.family_id).first()
+    recipe = Recipe.get(recipe_id, g.current_user['family_id'])
     if recipe:
-        return jsonify(recipe.to_dict())
+        return jsonify(recipe)
     return jsonify({"error": "Recipe not found"}), 404
 
 @bp.route('/recipes/<int:recipe_id>', methods=['PUT'])
 @token_required
 def update_recipe(recipe_id):
-    recipe = Recipe.query.filter_by(id=recipe_id, family_id=g.current_user.family_id).first()
-    if not recipe:
-        return jsonify({"error": "Recipe not found"}), 404
-        
     updated_data = request.json
-    if 'name' in updated_data:
-        recipe.name = updated_data['name']
-    if 'ingredients' in updated_data:
-        recipe.ingredients = updated_data['ingredients']
-    if 'instructions' in updated_data:
-        recipe.instructions = updated_data['instructions']
-        
-    db_session.commit()
+    row_count = Recipe.update(
+        recipe_id,
+        g.current_user['family_id'],
+        name=updated_data.get('name'),
+        ingredients=updated_data.get('ingredients'),
+        instructions=updated_data.get('instructions')
+    )
+    if row_count == 0:
+        return jsonify({"error": "Recipe not found"}), 404
     return jsonify({"message": "Recipe updated successfully"})
 
 @bp.route('/recipes/<int:recipe_id>', methods=['DELETE'])
 @token_required
 def delete_recipe(recipe_id):
-    recipe = Recipe.query.filter_by(id=recipe_id, family_id=g.current_user.family_id).first()
-    if not recipe:
+    row_count = Recipe.delete(recipe_id, g.current_user['family_id'])
+    if row_count == 0:
         return jsonify({"error": "Recipe not found"}), 404
-    
-    db_session.delete(recipe)
-    db_session.commit()
     return jsonify({"message": "Recipe deleted successfully"})
 
 # --- Grocery Item Endpoints ---
 @bp.route('/grocery_items', methods=['GET'])
 @token_required
 def get_grocery_items():
-    items = GroceryItem.query.filter_by(family_id=g.current_user.family_id).all()
-    return jsonify([item.to_dict() for item in items])
+    items = GroceryItem.all(g.current_user['family_id'])
+    return jsonify(items)
 
 @bp.route('/grocery_items', methods=['POST'])
 @token_required
 def add_grocery_item():
+    from models import parse_quantity_and_unit
+    
     new_item_data = request.json
     if not new_item_data or 'name' not in new_item_data:
         return jsonify({"error": "Name is required"}), 400
     
-    item = GroceryItem(
-        name=new_item_data['name'],
-        quantity=new_item_data.get('quantity', ''),
-        category=new_item_data.get('category', 'Other'),
-        is_completed=new_item_data.get('is_completed', False),
-        family_id=g.current_user.family_id
-    )
-    db_session.add(item)
-    db_session.commit()
-    return jsonify(item.to_dict()), 201
+    name = new_item_data['name']
+    quantity_str = new_item_data.get('quantity', '')
+    category = new_item_data.get('category', 'Other')
+    is_completed = new_item_data.get('is_completed', False)
+    
+    # Parse quantity and unit from the incoming item
+    new_value, new_unit = parse_quantity_and_unit(quantity_str)
+    
+    # Check if an existing item with the same name and unit exists
+    existing_item = GroceryItem.find_by_name_and_unit(name, new_unit, g.current_user['family_id'])
+    
+    if existing_item:
+        # Parse the existing item's quantity
+        existing_value, _ = parse_quantity_and_unit(existing_item['quantity'])
+        
+        # Combine quantities
+        combined_value = existing_value + new_value
+        
+        # Format the new quantity string
+        if new_unit:
+            new_quantity = f"{combined_value} {new_unit}"
+        else:
+            new_quantity = str(combined_value) if combined_value != 0 else ''
+        
+        # Update the existing item
+        GroceryItem.update(
+            existing_item['id'],
+            g.current_user['family_id'],
+            quantity=new_quantity
+        )
+        
+        # Return the updated item
+        updated_item = GroceryItem.get(existing_item['id'], g.current_user['family_id'])
+        return jsonify(updated_item), 200
+    else:
+        # No existing item found, create a new one
+        item = GroceryItem.create(
+            name=name,
+            quantity=quantity_str,
+            category=category,
+            is_completed=is_completed,
+            family_id=g.current_user['family_id']
+        )
+        return jsonify(item), 201
 
 @bp.route('/grocery_items/<int:item_id>', methods=['GET'])
 @token_required
 def get_grocery_item(item_id):
-    item = GroceryItem.query.filter_by(id=item_id, family_id=g.current_user.family_id).first()
+    item = GroceryItem.get(item_id, g.current_user['family_id'])
     if item:
-        return jsonify(item.to_dict())
+        return jsonify(item)
     return jsonify({"error": "Grocery item not found"}), 404
 
 @bp.route('/grocery_items/<int:item_id>', methods=['PUT'])
 @token_required
 def update_grocery_item(item_id):
-    item = GroceryItem.query.filter_by(id=item_id, family_id=g.current_user.family_id).first()
-    if not item:
-        return jsonify({"error": "Grocery item not found"}), 404
-        
     updated_data = request.json
-    if 'name' in updated_data:
-        item.name = updated_data['name']
-    if 'quantity' in updated_data:
-        item.quantity = updated_data['quantity']
-    if 'category' in updated_data:
-        item.category = updated_data['category']
-    if 'is_completed' in updated_data:
-        item.is_completed = updated_data['is_completed']
-        
-    db_session.commit()
+    row_count = GroceryItem.update(
+        item_id,
+        g.current_user['family_id'],
+        name=updated_data.get('name'),
+        quantity=updated_data.get('quantity'),
+        category=updated_data.get('category'),
+        is_completed=updated_data.get('is_completed')
+    )
+    if row_count == 0:
+        return jsonify({"error": "Grocery item not found"}), 404
     return jsonify({"message": "Grocery item updated successfully"})
 
 @bp.route('/grocery_items/<int:item_id>', methods=['DELETE'])
 @token_required
 def delete_grocery_item(item_id):
-    item = GroceryItem.query.filter_by(id=item_id, family_id=g.current_user.family_id).first()
-    if not item:
+    row_count = GroceryItem.delete(item_id, g.current_user['family_id'])
+    if row_count == 0:
         return jsonify({"error": "Grocery item not found"}), 404
-    
-    db_session.delete(item)
-    db_session.commit()
     return jsonify({"message": "Grocery item deleted successfully"})

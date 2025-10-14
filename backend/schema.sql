@@ -2,12 +2,31 @@ DROP TABLE IF EXISTS tasks;
 DROP TABLE IF EXISTS meals;
 DROP TABLE IF EXISTS recipes;
 DROP TABLE IF EXISTS grocery_items;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS families;
+
+CREATE TABLE families (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL
+);
+
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    family_id INTEGER NOT NULL,
+    FOREIGN KEY (family_id) REFERENCES families(id)
+);
 
 CREATE TABLE tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
     description TEXT,
-    completed BOOLEAN DEFAULT 0
+    completed BOOLEAN DEFAULT 0,
+    family_id INTEGER NOT NULL,
+    user_id INTEGER,
+    FOREIGN KEY (family_id) REFERENCES families(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 CREATE TABLE grocery_items (
@@ -15,7 +34,9 @@ CREATE TABLE grocery_items (
     name TEXT NOT NULL,
     quantity TEXT,
     category TEXT DEFAULT 'Other',
-    is_completed BOOLEAN DEFAULT 0
+    is_completed BOOLEAN DEFAULT 0,
+    family_id INTEGER NOT NULL,
+    FOREIGN KEY (family_id) REFERENCES families(id)
 );
 
 CREATE TABLE meals (
@@ -24,13 +45,17 @@ CREATE TABLE meals (
     date TEXT,
     recipe_id INTEGER,
     meal_time TEXT,
-    FOREIGN KEY (recipe_id) REFERENCES recipes(id)
+    family_id INTEGER NOT NULL,
+    FOREIGN KEY (recipe_id) REFERENCES recipes(id),
+    FOREIGN KEY (family_id) REFERENCES families(id)
 );
 
 CREATE TABLE recipes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    instructions TEXT -- JSON-encoded list of strings
+    instructions TEXT, -- JSON-encoded list of strings
+    family_id INTEGER NOT NULL,
+    FOREIGN KEY (family_id) REFERENCES families(id)
 );
 
 CREATE TABLE recipe_ingredients (
