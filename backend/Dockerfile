@@ -17,4 +17,4 @@ EXPOSE 8080
 # Gunicorn is a WSGI HTTP Server for UNIX. It's a pre-fork worker model.
 # The --bind 0.0.0.0:8080 makes it listen on all network interfaces on port 8080.
 # The app:create_app specifies the callable 'create_app' inside 'app.py'
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "app:app"]
+CMD ["/bin/bash", "-c", "alembic upgrade head && gunicorn --bind 0.0.0.0:8080 app:app"]
