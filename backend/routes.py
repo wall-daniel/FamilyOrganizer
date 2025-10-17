@@ -44,7 +44,7 @@ def login():
 
     user = User.get_by_username(auth.username)
 
-    if not user or not User().check_password(user['password_hash'], auth.password):
+    if not user or not User.check_password(user['password_hash'], auth.password):
         return jsonify({'message': 'Could not verify'}), 401
 
     token = jwt.encode({
