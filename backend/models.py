@@ -65,10 +65,15 @@ class User:
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
+        print(f"DEBUG: Generated password hash: {self.password_hash}")
 
     @staticmethod
     def check_password(stored_password_hash, provided_password):
-        return check_password_hash(stored_password_hash, provided_password)
+        print(f"DEBUG: Stored hash: {stored_password_hash}")
+        print(f"DEBUG: Provided password: {provided_password}")
+        result = check_password_hash(stored_password_hash, provided_password)
+        print(f"DEBUG: Password check result: {result}")
+        return result
 
     @staticmethod
     def all():
@@ -93,6 +98,7 @@ class User:
     @staticmethod
     def create(username, password_hash, family_id):
         db = get_db()
+        print(f"DEBUG: Storing user: {username}, hash: {password_hash}, family_id: {family_id}")
         cursor = db.execute('INSERT INTO users (username, password_hash, family_id) VALUES (?, ?, ?)',
                             (username, password_hash, family_id))
         db.commit()

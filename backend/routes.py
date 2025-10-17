@@ -37,15 +37,15 @@ def register():
 
 @bp.route('/login', methods=['POST'])
 def login():
-    auth = request.authorization
+    auth = request.get_json()
+    print(auth, flush=True)
+    if not auth or not auth.get('username') or not auth.get('password'):
+        return jsonify({'message': 'Could not verify' + str(auth)}), 401
 
-    if not auth or not auth.username or not auth.password:
-        return jsonify({'message': 'Could not verify'}), 401
-
-    user = User.get_by_username(auth.username)
-
-    if not user or not User.check_password(user['password_hash'], auth.password):
-        return jsonify({'message': 'Could not verify'}), 401
+    user = User.get_by_username(auth.get('username'))
+    print(user, flush=True)
+    if not user or not User.check_password(user['password_hash'], auth.get('password')):
+        return jsonify({'message': 'Could not verify' + str(user)}), 401
 
     token = jwt.encode({
         'id': user['id'],
