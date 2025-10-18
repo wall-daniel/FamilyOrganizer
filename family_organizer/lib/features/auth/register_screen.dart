@@ -12,12 +12,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String _familyName = '';
   String _username = '';
   String _password = '';
+  String _email = '';
 
   void _register() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
       final authService = Provider.of<AuthService>(context, listen: false);
-      String? errorMessage = await authService.register(_familyName, _username, _password);
+      String? errorMessage = await authService.register(_familyName, _username, _password, _email);
 
       if (errorMessage == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -79,6 +80,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 },
                 onSaved: (value) {
                   _password = value!;
+                },
+              ),
+              TextFormField(
+                decoration: InputDecoration(labelText: 'Email'),
+                keyboardType: TextInputType.emailAddress,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your email';
+                  }
+                  if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                    return 'Please enter a valid email address';
+                  }
+                  return null;
+                },
+                onSaved: (value) {
+                  _email = value!;
                 },
               ),
               SizedBox(height: 20),

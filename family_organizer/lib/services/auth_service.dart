@@ -2,10 +2,13 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:family_organizer/common/api_config.dart';
+import 'package:family_organizer/models/user.dart';
+import 'package:family_organizer/services/user_service.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
 
 class AuthService {
   final String _baseUrl = ApiConfig.baseUrl; // Use central API config
-  final _storage = new FlutterSecureStorage();
+  final _storage = FlutterSecureStorage();
 
   Future<String?> login(String username, String password) async {
     final response = await http.post(
@@ -29,7 +32,7 @@ class AuthService {
     }
   }
 
-  Future<String?> register(String familyName, String username, String password) async {
+  Future<String?> register(String familyName, String username, String password, String email) async {
     final response = await http.post(
       Uri.parse('$_baseUrl/register'),
       headers: <String, String>{
@@ -39,6 +42,7 @@ class AuthService {
         'family_name': familyName,
         'username': username,
         'password': password,
+        'email': email,
       }),
     );
 
@@ -61,5 +65,25 @@ class AuthService {
   Future<bool> isAuthenticated() async {
     String? token = await getToken();
     return token != null;
+  }
+
+  Future<User?> getCurrentUser() async {
+    String? token = await getToken();
+    if (token == null) {
+      return null;
+    }
+
+    try {
+      Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
+      String userId = decodedToken['id'].toString(); // Assuming 'id' is in the token
+
+      // Fetch full user details using UserService
+      final userService = UserService(); // Create an instance of UserService
+      List<User> familyUsers = await userService.getFamilyUsers();
+      return familyUsers.firstWhere((user) => user.id == userId);
+    } catch (e) {
+      print('Error decoding token or fetching user: $e');
+      return null;
+    }
   }
 }

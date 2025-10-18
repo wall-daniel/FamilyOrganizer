@@ -24,15 +24,17 @@ def register():
         return jsonify({'message': 'Username already exists'}), 400
 
     family = Family.get_by_name(family_name)
+    is_accepted_status = False
     if not family:
         family = Family.create(name=family_name)
         family_id = family['id']
+        is_accepted_status = True # First user in a new family is automatically accepted
     else:
         family_id = family['id']
 
     new_user = User()
     new_user.set_password(password)
-    user_data = User.create(username=username, password_hash=new_user.password_hash, email=email, family_id=family_id)
+    user_data = User.create(username=username, password_hash=new_user.password_hash, email=email, family_id=family_id, is_accepted=is_accepted_status)
 
     return jsonify({'message': 'New user created!'}), 201
 
@@ -63,6 +65,25 @@ def get_family_users():
     users_safe = [{k: v for k, v in user.items() if k != 'password_hash'} for user in users]
     return jsonify(users_safe)
 
+@bp.route('/family/users/<int:user_id>/accept', methods=['PUT'])
+@token_required
+def accept_family_user(user_id):
+    if not g.current_user['is_accepted']:
+        return jsonify({'message': 'Only accepted family members can accept new users.'}), 403
+
+    target_user = User.get(user_id)
+    if not target_user or target_user['family_id'] != g.current_user['family_id']:
+        return jsonify({'message': 'User not found in your family.'}), 404
+
+    if target_user['is_accepted']:
+        return jsonify({'message': 'User is already accepted.'}), 400
+
+    row_count = User.update_acceptance_status(user_id, g.current_user['family_id'], True)
+    if row_count == 0:
+        return jsonify({"error": "Failed to accept user."}), 500
+    
+    return jsonify({'message': 'User accepted successfully!'}), 200
+
 # --- Task Endpoints ---
 @bp.route('/tasks', methods=['GET'])
 @token_required
@@ -73,6 +94,8 @@ def get_tasks():
 @bp.route('/tasks', methods=['POST'])
 @token_required
 def add_task():
+    if not g.current_user['is_accepted']:
+        return jsonify({'message': 'You must be an accepted family member to add tasks.'}), 403
     new_task_data = request.json
     if not new_task_data or 'title' not in new_task_data:
         return jsonify({"error": "Title is required"}), 400
@@ -97,6 +120,8 @@ def get_task(task_id):
 @bp.route('/tasks/<int:task_id>', methods=['PUT'])
 @token_required
 def update_task(task_id):
+    if not g.current_user['is_accepted']:
+        return jsonify({'message': 'You must be an accepted family member to update tasks.'}), 403
     updated_data = request.json
     row_count = Task.update(
         task_id,
@@ -112,6 +137,8 @@ def update_task(task_id):
 @bp.route('/tasks/<int:task_id>', methods=['DELETE'])
 @token_required
 def delete_task(task_id):
+    if not g.current_user['is_accepted']:
+        return jsonify({'message': 'You must be an accepted family member to delete tasks.'}), 403
     row_count = Task.delete(task_id, g.current_user['family_id'])
     if row_count == 0:
         return jsonify({"error": "Task not found"}), 404
@@ -127,6 +154,8 @@ def get_meals():
 @bp.route('/meals', methods=['POST'])
 @token_required
 def add_meal():
+    if not g.current_user['is_accepted']:
+        return jsonify({'message': 'You must be an accepted family member to add meals.'}), 403
     new_meal_data = request.json
     if not new_meal_data or 'name' not in new_meal_data:
         return jsonify({"error": "Meal name is required"}), 400
@@ -151,6 +180,8 @@ def get_meal(meal_id):
 @bp.route('/meals/<int:meal_id>', methods=['PUT'])
 @token_required
 def update_meal(meal_id):
+    if not g.current_user['is_accepted']:
+        return jsonify({'message': 'You must be an accepted family member to update meals.'}), 403
     updated_data = request.json
     row_count = Meal.update(
         meal_id,
@@ -167,6 +198,8 @@ def update_meal(meal_id):
 @bp.route('/meals/<int:meal_id>', methods=['DELETE'])
 @token_required
 def delete_meal(meal_id):
+    if not g.current_user['is_accepted']:
+        return jsonify({'message': 'You must be an accepted family member to delete meals.'}), 403
     row_count = Meal.delete(meal_id, g.current_user['family_id'])
     if row_count == 0:
         return jsonify({"error": "Meal not found"}), 404
@@ -182,6 +215,8 @@ def get_recipes():
 @bp.route('/recipes', methods=['POST'])
 @token_required
 def add_recipe():
+    if not g.current_user['is_accepted']:
+        return jsonify({'message': 'You must be an accepted family member to add recipes.'}), 403
     new_recipe_data = request.json
     if not new_recipe_data or 'name' not in new_recipe_data:
         return jsonify({"error": "Recipe name is required"}), 400
@@ -205,6 +240,8 @@ def get_recipe(recipe_id):
 @bp.route('/recipes/<int:recipe_id>', methods=['PUT'])
 @token_required
 def update_recipe(recipe_id):
+    if not g.current_user['is_accepted']:
+        return jsonify({'message': 'You must be an accepted family member to update recipes.'}), 403
     updated_data = request.json
     row_count = Recipe.update(
         recipe_id,
@@ -220,6 +257,8 @@ def update_recipe(recipe_id):
 @bp.route('/recipes/<int:recipe_id>', methods=['DELETE'])
 @token_required
 def delete_recipe(recipe_id):
+    if not g.current_user['is_accepted']:
+        return jsonify({'message': 'You must be an accepted family member to delete recipes.'}), 403
     row_count = Recipe.delete(recipe_id, g.current_user['family_id'])
     if row_count == 0:
         return jsonify({"error": "Recipe not found"}), 404
@@ -235,6 +274,8 @@ def get_grocery_items():
 @bp.route('/grocery_items', methods=['POST'])
 @token_required
 def add_grocery_item():
+    if not g.current_user['is_accepted']:
+        return jsonify({'message': 'You must be an accepted family member to add grocery items.'}), 403
     from models import parse_quantity_and_unit
     
     new_item_data = request.json
@@ -297,6 +338,8 @@ def get_grocery_item(item_id):
 @bp.route('/grocery_items/<int:item_id>', methods=['PUT'])
 @token_required
 def update_grocery_item(item_id):
+    if not g.current_user['is_accepted']:
+        return jsonify({'message': 'You must be an accepted family member to update grocery items.'}), 403
     updated_data = request.json
     row_count = GroceryItem.update(
         item_id,
@@ -313,6 +356,8 @@ def update_grocery_item(item_id):
 @bp.route('/grocery_items/<int:item_id>', methods=['DELETE'])
 @token_required
 def delete_grocery_item(item_id):
+    if not g.current_user['is_accepted']:
+        return jsonify({'message': 'You must be an accepted family member to delete grocery items.'}), 403
     row_count = GroceryItem.delete(item_id, g.current_user['family_id'])
     if row_count == 0:
         return jsonify({"error": "Grocery item not found"}), 404

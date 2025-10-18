@@ -15,6 +15,7 @@ CREATE TABLE users (
     username TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
     email TEXT NOT NULL,
+    is_accepted BOOLEAN DEFAULT 0,
     family_id INTEGER NOT NULL,
     FOREIGN KEY (family_id) REFERENCES families(id)
 );

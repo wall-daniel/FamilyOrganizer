@@ -30,4 +30,24 @@ class UserService {
       throw Exception('Failed to load family users: ${response.body}');
     }
   }
+
+  Future<void> acceptUser(String userId) async {
+    String? token = await _storage.read(key: 'token');
+
+    if (token == null) {
+      throw Exception('Authentication token not found.');
+    }
+
+    final response = await http.put(
+      Uri.parse('$_baseUrl/family/users/$userId/accept'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to accept user: ${response.body}');
+    }
+  }
 }

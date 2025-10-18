@@ -2,12 +2,14 @@ class User {
   final String id;
   final String username;
   final String email;
+  final bool isAccepted;
   final String familyId;
 
   User({
     required this.id,
     required this.username,
     required this.email,
+    required this.isAccepted,
     required this.familyId,
   });
 
@@ -16,6 +18,7 @@ class User {
       id: json['id'],
       username: json['username'],
       email: json['email'],
+      isAccepted: json['is_accepted'] ?? false, // Default to false if not present
       familyId: json['family_id'],
     );
   }
@@ -25,6 +28,7 @@ class User {
       'id': id,
       'username': username,
       'email': email,
+      'is_accepted': isAccepted,
       'family_id': familyId,
     };
   }
