@@ -57,10 +57,11 @@ class Family:
         }
 
 class User:
-    def __init__(self, id=None, username=None, password_hash=None, family_id=None):
+    def __init__(self, id=None, username=None, password_hash=None, email=None, family_id=None):
         self.id = id
         self.username = username
         self.password_hash = password_hash
+        self.email = email
         self.family_id = family_id
 
     def set_password(self, password):
@@ -96,15 +97,22 @@ class User:
         return row_to_dict(user) if user else None
 
     @staticmethod
-    def create(username, password_hash, family_id):
+    def get_by_family_id(family_id):
         db = get_db()
-        print(f"DEBUG: Storing user: {username}, hash: {password_hash}, family_id: {family_id}")
-        cursor = db.execute('INSERT INTO users (username, password_hash, family_id) VALUES (?, ?, ?)',
-                            (username, password_hash, family_id))
+        cursor = db.execute('SELECT id, username, email, family_id FROM users WHERE family_id = ?', (family_id,))
+        return [row_to_dict(row) for row in cursor.fetchall()]
+
+    @staticmethod
+    def create(username, password_hash, email, family_id):
+        db = get_db()
+        print(f"DEBUG: Storing user: {username}, hash: {password_hash}, email: {email}, family_id: {family_id}")
+        cursor = db.execute('INSERT INTO users (username, password_hash, email, family_id) VALUES (?, ?, ?, ?)',
+                            (username, password_hash, email, family_id))
         db.commit()
         return {
             "id": cursor.lastrowid,
             "username": username,
+            "email": email,
             "family_id": family_id
         }
 

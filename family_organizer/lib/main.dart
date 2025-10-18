@@ -7,12 +7,14 @@ import 'package:family_organizer/features/recipes/recipe_list_screen.dart';
 import 'package:family_organizer/features/recipes/add_recipe_screen.dart';
 import 'package:family_organizer/features/auth/login_screen.dart';
 import 'package:family_organizer/features/auth/register_screen.dart';
+import 'package:family_organizer/features/family_users/family_users_screen.dart';
 import 'package:family_organizer/services/task_service.dart';
 import 'package:provider/provider.dart';
 import 'package:family_organizer/services/meal_service.dart';
 import 'package:family_organizer/services/grocery_service.dart';
 import 'package:family_organizer/services/recipe_service.dart';
 import 'package:family_organizer/services/auth_service.dart';
+import 'package:family_organizer/services/user_service.dart';
 
 void main() {
   runApp(
@@ -23,6 +25,7 @@ void main() {
         ChangeNotifierProvider(create: (context) => GroceryService()),
         ChangeNotifierProvider(create: (context) => RecipeService()),
         Provider(create: (context) => AuthService()),
+        Provider(create: (context) => UserService()),
       ],
       child: const MyApp(),
     ),
@@ -47,6 +50,7 @@ class MyApp extends StatelessWidget {
         GroceryListScreen.routeName: (context) => const GroceryListScreen(),
         RecipeListScreen.routeName: (context) => const RecipeListScreen(),
         AddRecipeScreen.routeName: (context) => const AddRecipeScreen(),
+        FamilyUsersScreen.routeName: (context) => const FamilyUsersScreen(),
         '/login': (context) => LoginScreen(),
         '/register': (context) => RegisterScreen(),
       },

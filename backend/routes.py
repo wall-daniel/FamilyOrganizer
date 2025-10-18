@@ -15,9 +15,10 @@ def register():
     family_name = data.get('family_name')
     username = data.get('username')
     password = data.get('password')
+    email = data.get('email')
 
-    if not all([family_name, username, password]):
-        return jsonify({'message': 'Missing family_name, username, or password'}), 400
+    if not all([family_name, username, password, email]):
+        return jsonify({'message': 'Missing family_name, username, password, or email'}), 400
 
     if User.get_by_username(username):
         return jsonify({'message': 'Username already exists'}), 400
@@ -31,7 +32,7 @@ def register():
 
     new_user = User()
     new_user.set_password(password)
-    user_data = User.create(username=username, password_hash=new_user.password_hash, family_id=family_id)
+    user_data = User.create(username=username, password_hash=new_user.password_hash, email=email, family_id=family_id)
 
     return jsonify({'message': 'New user created!'}), 201
 
@@ -47,14 +48,20 @@ def login():
     if not user or not User.check_password(user['password_hash'], auth.get('password')):
         return jsonify({'message': 'Could not verify' + str(user)}), 401
 
-    print("Secret key " + str(current_app.config['SECRET_KEY']), flush=True)
     token = jwt.encode({
         'id': user['id'],
         'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)
     }, current_app.config['SECRET_KEY'], algorithm="HS256")
-    print(token, flush=True)
 
     return jsonify({'token': token})
+
+@bp.route('/family/users', methods=['GET'])
+@token_required
+def get_family_users():
+    users = User.get_by_family_id(g.current_user['family_id'])
+    # Exclude sensitive information like password_hash
+    users_safe = [{k: v for k, v in user.items() if k != 'password_hash'} for user in users]
+    return jsonify(users_safe)
 
 # --- Task Endpoints ---
 @bp.route('/tasks', methods=['GET'])

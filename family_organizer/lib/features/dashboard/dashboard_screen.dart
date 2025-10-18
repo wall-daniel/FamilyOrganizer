@@ -119,4 +119,9 @@ final List<Map<String, dynamic>> _featureItems = [
     'icon': Icons.menu_book,
     'route': '/recipes',
   },
+  {
+    'title': 'Family Users',
+    'icon': Icons.group,
+    'route': '/family-users',
+  },
 ];
