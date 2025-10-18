@@ -44,6 +44,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ],
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await Provider.of<AuthService>(context, listen: false).logout();
+              Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+            },
+          ),
+        ],
       ),
       body: FutureBuilder<User?>(
         future: _currentUser,
