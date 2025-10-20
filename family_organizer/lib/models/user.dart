@@ -15,11 +15,11 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'] as int, // Expecting int from JSON
+      id: json['id'] as int,
       username: json['username'],
       email: json['email'],
-      isAccepted: json['is_accepted'] == 1,
-      familyId: json['family_id'] as int, // Expecting int from JSON
+      isAccepted: json['is_accepted'],
+      familyId: json['family_id'] as int,
     );
   }
 
