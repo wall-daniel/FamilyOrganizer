@@ -42950,7 +42950,7 @@ return A.R(null,r)}})
 return A.S($async$tM,r)}}
 A.aiV.prototype={
 $1(a){var s=J.aQ(a)
-return new A.fa(A.dM(s.h(a,"id")),s.h(a,"username"),s.h(a,"email"),J.d(s.h(a,"is_accepted"),1),A.dM(s.h(a,"family_id")))},
+return new A.fa(A.dM(s.h(a,"id")),s.h(a,"username"),s.h(a,"email"),s.h(a,"is_accepted"),A.dM(s.h(a,"family_id")))},
 $S:509}
 A.hM.prototype={
 J(){return"AnimationStatus."+this.b},
