@@ -23,11 +23,21 @@ class _FamilyUsersScreenState extends State<FamilyUsersScreen> {
     _loadData();
   }
 
-  void _loadData() {
-    setState(() {
-      _familyUsers = _userService.getFamilyUsers();
-      _currentUser = Provider.of<AuthService>(context, listen: false).getCurrentUser();
-    });
+  void _loadData() async { // Make _loadData async
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final String? token = await authService.getToken(); // Get the token
+
+    if (token != null) {
+      setState(() {
+        _familyUsers = _userService.getFamilyUsers(token); // Pass the token
+        _currentUser = authService.getCurrentUser(); // getCurrentUser already uses the token internally
+      });
+    } else {
+      // Handle case where token is null, e.g., redirect to login
+      print('Token is null, cannot load family users.');
+      // Optionally, you might want to navigate to the login screen here
+      // Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+    }
   }
 
   Future<void> _acceptUser(String userId) async {

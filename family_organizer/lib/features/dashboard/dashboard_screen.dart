@@ -65,6 +65,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
           final User? currentUser = snapshot.data;
           final bool isAccepted = currentUser?.isAccepted ?? false;
+          // log that currentUser info
+          print('Current User: ${currentUser?.username}, Accepted: $isAccepted');
 
           return Stack(
             children: [

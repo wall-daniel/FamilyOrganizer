@@ -6,14 +6,12 @@ import 'package:family_organizer/models/user.dart';
 
 class UserService {
   final String _baseUrl = ApiConfig.baseUrl;
-  final _storage = FlutterSecureStorage();
-
-  Future<List<User>> getFamilyUsers() async {
-    String? token = await _storage.read(key: 'token');
-
-    if (token == null) {
-      throw Exception('Authentication token not found.');
-    }
+  final _storage = FlutterSecureStorage(); // Re-add _storage for acceptUser
+  Future<List<User>> getFamilyUsers(String token) async {
+    // No need to read from storage again, token is passed directly
+    // if (token == null) { // This check is now handled by the caller
+    //   throw Exception('Authentication token not found.');
+    // }
 
     final response = await http.get(
       Uri.parse('$_baseUrl/family/users'),

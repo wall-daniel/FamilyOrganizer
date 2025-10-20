@@ -79,7 +79,7 @@ class AuthService {
 
       // Fetch full user details using UserService
       final userService = UserService(); // Create an instance of UserService
-      List<User> familyUsers = await userService.getFamilyUsers();
+      List<User> familyUsers = await userService.getFamilyUsers(token); // Pass the token
       return familyUsers.firstWhere((user) => user.id == userId);
     } catch (e) {
       print('Error decoding token or fetching user: $e');
