@@ -29,7 +29,7 @@ class UserService {
     }
   }
 
-  Future<void> acceptUser(String userId) async {
+  Future<void> acceptUser(int userId) async { // Changed to int
     String? token = await _storage.read(key: 'token');
 
     if (token == null) {
@@ -37,7 +37,7 @@ class UserService {
     }
 
     final response = await http.put(
-      Uri.parse('$_baseUrl/family/users/$userId/accept'),
+      Uri.parse('$_baseUrl/family/users/$userId/accept'), // userId is now int, will be interpolated
       headers: <String, String>{
         'Content-Type': 'application/json; charset=UTF-8',
         'Authorization': 'Bearer $token',

@@ -1,9 +1,9 @@
 class User {
-  final String id;
+  final int id; // Changed to int
   final String username;
   final String email;
   final bool isAccepted;
-  final String familyId;
+  final int familyId; // Changed to int
 
   User({
     required this.id,
@@ -15,11 +15,11 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'].toString(), // Ensure ID is always a String
+      id: json['id'] as int, // Expecting int from JSON
       username: json['username'],
       email: json['email'],
-      isAccepted: json['is_accepted'] == 1, // Convert 1 to true, 0 to false
-      familyId: json['family_id'],
+      isAccepted: json['is_accepted'] == 1,
+      familyId: json['family_id'] as int, // Expecting int from JSON
     );
   }
 

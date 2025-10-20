@@ -75,12 +75,12 @@ class AuthService {
 
     try {
       Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
-      String userId = decodedToken['id'].toString(); // Assuming 'id' is in the token
+      int userId = decodedToken['id'] as int; // Expecting int from token, cast directly
 
       // Fetch full user details using UserService
       final userService = UserService(); // Create an instance of UserService
       List<User> familyUsers = await userService.getFamilyUsers(token); // Pass the token
-      return familyUsers.firstWhere((user) => user.id == userId);
+      return familyUsers.firstWhere((user) => user.id == userId); // Now comparing int with int
     } catch (e) {
       print('Error decoding token or fetching user: $e');
       return null;

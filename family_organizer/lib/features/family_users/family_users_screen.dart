@@ -40,9 +40,9 @@ class _FamilyUsersScreenState extends State<FamilyUsersScreen> {
     }
   }
 
-  Future<void> _acceptUser(String userId) async {
+  Future<void> _acceptUser(int userId) async { // Changed to int
     try {
-      await _userService.acceptUser(userId);
+      await _userService.acceptUser(userId); // Now passes int
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('User accepted successfully!')),
       );

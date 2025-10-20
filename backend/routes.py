@@ -62,6 +62,7 @@ def login():
 @token_required
 def get_family_users():
     users = User.get_by_family_id(g.current_user['family_id'])
+    print(f"DEBUG: Retrieved users for family_id {g.current_user['family_id']}: {users}", flush=True)
     # Exclude sensitive information like password_hash and convert is_accepted to boolean
     users_safe = []
     for user in users:

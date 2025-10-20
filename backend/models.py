@@ -106,7 +106,7 @@ class User:
     @staticmethod
     def create(username, password_hash, email, family_id, is_accepted=False):
         db = get_db()
-        print(f"DEBUG: Storing user: {username}, hash: {password_hash}, email: {email}, is_accepted: {is_accepted}, family_id: {family_id}")
+        print(f"DEBUG: Storing user: {username}, hash: {password_hash}, email: {email}, is_accepted: {is_accepted}, family_id: {family_id}", flush=True)
         cursor = db.execute('INSERT INTO users (username, password_hash, email, is_accepted, family_id) VALUES (?, ?, ?, ?, ?)',
                             (username, password_hash, email, is_accepted, family_id))
         db.commit()
