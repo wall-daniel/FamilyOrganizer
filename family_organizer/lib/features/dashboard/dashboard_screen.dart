@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:family_organizer/services/auth_service.dart';
 import 'package:family_organizer/models/user.dart';
+import 'package:family_organizer/features/thoughts/thoughts_screen.dart'; // Import the new thoughts screen
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -215,5 +216,10 @@ final List<Map<String, dynamic>> _featureItems = [
     'title': 'Family Users',
     'icon': Icons.group,
     'route': '/family-users',
+  },
+  {
+    'title': 'Thoughts',
+    'icon': Icons.lightbulb_outline,
+    'route': '/thoughts',
   },
 ];

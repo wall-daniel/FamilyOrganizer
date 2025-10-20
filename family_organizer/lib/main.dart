@@ -8,9 +8,11 @@ import 'package:family_organizer/features/recipes/add_recipe_screen.dart';
 import 'package:family_organizer/features/auth/login_screen.dart';
 import 'package:family_organizer/features/auth/register_screen.dart';
 import 'package:family_organizer/features/family_users/family_users_screen.dart';
+import 'package:family_organizer/features/thoughts/thoughts_screen.dart'; // Import the new thoughts screen
 import 'package:family_organizer/services/task_service.dart';
 import 'package:provider/provider.dart';
 import 'package:family_organizer/services/meal_service.dart';
+import 'package:family_organizer/services/thought_service.dart'; // Import the new thought service
 import 'package:family_organizer/services/grocery_service.dart';
 import 'package:family_organizer/services/recipe_service.dart';
 import 'package:family_organizer/services/auth_service.dart';
@@ -26,6 +28,7 @@ void main() {
         ChangeNotifierProvider(create: (context) => RecipeService()),
         Provider(create: (context) => AuthService()),
         Provider(create: (context) => UserService()),
+        Provider(create: (context) => ThoughtService()), // Register ThoughtService
       ],
       child: const MyApp(),
     ),
@@ -53,6 +56,7 @@ class MyApp extends StatelessWidget {
         FamilyUsersScreen.routeName: (context) => const FamilyUsersScreen(),
         '/login': (context) => LoginScreen(),
         '/register': (context) => RegisterScreen(),
+        '/thoughts': (context) => const ThoughtsScreen(), // Add the new thoughts route
       },
     );
   }

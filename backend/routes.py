@@ -369,3 +369,28 @@ def delete_grocery_item(item_id):
     if row_count == 0:
         return jsonify({"error": "Grocery item not found"}), 404
     return jsonify({"message": "Grocery item deleted successfully"})
+
+# --- Thought Endpoints ---
+@bp.route('/thoughts', methods=['POST'])
+@token_required
+def add_thought():
+    if not g.current_user['is_accepted']:
+        return jsonify({'message': 'You must be an accepted family member to post thoughts.'}), 403
+    new_thought_data = request.json
+    if not new_thought_data or 'content' not in new_thought_data:
+        return jsonify({"error": "Content is required"}), 400
+    
+    thought = Thought.create(
+        content=new_thought_data['content'],
+        user_id=g.current_user['id'],
+        family_id=g.current_user['family_id']
+    )
+    return jsonify(thought), 201
+
+@bp.route('/thoughts', methods=['GET'])
+@token_required
+def get_thoughts():
+    page = request.args.get('page', 1, type=int)
+    limit = request.args.get('limit', 10, type=int)
+    thoughts = Thought.all(g.current_user['family_id'], page=page, limit=limit)
+    return jsonify(thoughts)

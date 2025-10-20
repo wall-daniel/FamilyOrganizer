@@ -472,3 +472,79 @@ class GroceryItem:
                     return item
         
         return None
+
+class Thought:
+    def __init__(self, id=None, content=None, timestamp=None, user_id=None, family_id=None):
+        self.id = id
+        self.content = content
+        self.timestamp = timestamp
+        self.user_id = user_id
+        self.family_id = family_id
+
+    @staticmethod
+    def all(family_id, page=1, limit=10):
+        db = get_db()
+        offset = (page - 1) * limit
+        cursor = db.execute('''
+            SELECT t.id, t.content, t.timestamp, t.user_id, u.username, u.email, u.is_accepted, u.family_id
+            FROM thoughts t
+            JOIN users u ON t.user_id = u.id
+            WHERE t.family_id = ?
+            ORDER BY t.timestamp DESC
+            LIMIT ? OFFSET ?
+        ''', (family_id, limit, offset))
+        
+        thoughts_data = []
+        for row in cursor.fetchall():
+            thought_dict = row_to_dict(row)
+            # Reconstruct the user object from the joined data
+            user_data = {
+                'id': thought_dict['user_id'],
+                'username': thought_dict['username'],
+                'email': thought_dict['email'],
+                'is_accepted': thought_dict['is_accepted'],
+                'family_id': thought_dict['family_id']
+            }
+            thought_dict['user'] = user_data
+            del thought_dict['username']
+            del thought_dict['email']
+            del thought_dict['is_accepted']
+            del thought_dict['family_id'] # Remove family_id from thought_dict as it's now nested under user
+            thoughts_data.append(thought_dict)
+        return thoughts_data
+
+    @staticmethod
+    def get(thought_id, family_id):
+        db = get_db()
+        cursor = db.execute('''
+            SELECT t.id, t.content, t.timestamp, t.user_id, u.username, u.email, u.is_accepted, u.family_id
+            FROM thoughts t
+            JOIN users u ON t.user_id = u.id
+            WHERE t.id = ? AND t.family_id = ?
+        ''', (thought_id, family_id))
+        thought = cursor.fetchone()
+        if thought:
+            thought_dict = row_to_dict(thought)
+            user_data = {
+                'id': thought_dict['user_id'],
+                'username': thought_dict['username'],
+                'email': thought_dict['email'],
+                'is_accepted': thought_dict['is_accepted'],
+                'family_id': thought_dict['family_id']
+            }
+            thought_dict['user'] = user_data
+            del thought_dict['username']
+            del thought_dict['email']
+            del thought_dict['is_accepted']
+            del thought_dict['family_id']
+            return thought_dict
+        return None
+
+    @staticmethod
+    def create(content, user_id, family_id):
+        db = get_db()
+        cursor = db.execute('INSERT INTO thoughts (content, user_id, family_id) VALUES (?, ?, ?)',
+                            (content, user_id, family_id))
+        db.commit()
+        # Fetch the newly created thought with user details
+        return Thought.get(cursor.lastrowid, family_id)

@@ -2,6 +2,7 @@ DROP TABLE IF EXISTS tasks;
 DROP TABLE IF EXISTS meals;
 DROP TABLE IF EXISTS recipes;
 DROP TABLE IF EXISTS grocery_items;
+DROP TABLE IF EXISTS thoughts; -- Add this line
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS families;
 
