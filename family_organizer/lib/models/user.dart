@@ -15,10 +15,10 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'],
+      id: json['id'].toString(), // Ensure ID is always a String
       username: json['username'],
       email: json['email'],
-      isAccepted: json['is_accepted'] ?? false, // Default to false if not present
+      isAccepted: json['is_accepted'] == 1, // Convert 1 to true, 0 to false
       familyId: json['family_id'],
     );
   }

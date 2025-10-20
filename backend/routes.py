@@ -62,8 +62,13 @@ def login():
 @token_required
 def get_family_users():
     users = User.get_by_family_id(g.current_user['family_id'])
-    # Exclude sensitive information like password_hash
-    users_safe = [{k: v for k, v in user.items() if k != 'password_hash'} for user in users]
+    # Exclude sensitive information like password_hash and convert is_accepted to boolean
+    users_safe = []
+    for user in users:
+        user_dict = {k: v for k, v in user.items() if k != 'password_hash'}
+        if 'is_accepted' in user_dict:
+            user_dict['is_accepted'] = bool(user_dict['is_accepted']) # Convert 0/1 to false/true
+        users_safe.append(user_dict)
     return jsonify(users_safe)
 
 @bp.route('/family/users/<int:user_id>/accept', methods=['PUT'])
