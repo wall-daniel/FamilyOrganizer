@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, g, current_app
-from models import Task, Meal, Recipe, GroceryItem, User, Family
+from models import Task, Meal, Recipe, GroceryItem, User, Family, Thought
 from database import get_db, row_to_dict
 from auth import token_required
 import jwt
