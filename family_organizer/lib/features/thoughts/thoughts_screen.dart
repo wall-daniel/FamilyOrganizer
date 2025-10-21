@@ -123,14 +123,10 @@ class _ThoughtsScreenState extends State<ThoughtsScreen> {
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
-              itemCount: _thoughts.length + (_hasMore || _isLoading ? 1 : 0),
+              itemCount: _thoughts.length + (_isLoading ? 1 : 0),
               itemBuilder: (context, index) {
                 if (index == _thoughts.length) {
-                  if (_hasMore || _isLoading) {
-                    return const Center(child: CircularProgressIndicator());
-                  } else {
-                    return const SizedBox.shrink();
-                  }
+                  return const Center(child: CircularProgressIndicator());
                 }
                 final thought = _thoughts[index];
                 return ThoughtBubble(thought: thought);
