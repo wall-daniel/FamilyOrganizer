@@ -42606,14 +42606,17 @@ A.a0b.prototype={
 $1(a){return a.a===this.a},
 $S:489}
 A.iQ.prototype={
-np(){var s=0,r=A.S(t.GU),q,p=this,o,n,m
+np(){var s=0,r=A.S(t.GU),q,p=this,o,n,m,l,k,j
 var $async$np=A.O(function(a,b){if(a===1)return A.P(b,r)
-while(true)switch(s){case 0:s=3
+while(true)switch(s){case 0:o=t.N
+n=A
+m="Content-Type"
+l="application/json"
+k="Authorization"
+j=A
+s=3
 return A.M(p.c.ij(),$async$np)
-case 3:o=b
-n=o==null?"":o
-m=t.N
-q=A.ab(["Content-Type","application/json","x-access-token",n],m,m)
+case 3:q=n.ab([m,l,k,"Bearer "+j.k(b)],o,o)
 s=1
 break
 case 1:return A.Q(q,r)}})
