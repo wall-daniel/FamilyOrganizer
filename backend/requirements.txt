@@ -2,3 +2,7 @@ Flask==2.3.2
 gunicorn==21.2.0
 flask-cors==3.0.10
 PyJWT==2.8.0
+Flask-SQLAlchemy==2.5.1
+SQLAlchemy==1.4.46
+marshmallow-sqlalchemy==0.28.0
+flask-marshmallow==0.14.0
