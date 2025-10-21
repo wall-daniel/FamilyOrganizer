@@ -16,7 +16,7 @@ class GroceryService extends ChangeNotifier {
     String? token = await _authService.getToken();
     return {
       'Content-Type': 'application/json',
-      'x-access-token': token ?? '',
+      'Authorization': 'Bearer $token',
     };
   }
 
