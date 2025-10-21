@@ -1,30 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:family_organizer/models/meal.dart';
-import 'package:family_organizer/common/api_config.dart'; // Import ApiConfig
-import 'package:family_organizer/services/auth_service.dart';
+import 'package:family_organizer/common/api_config.dart';
+import 'package:family_organizer/common/http_client.dart';
 
 class MealService extends ChangeNotifier {
-  final String _baseUrl = ApiConfig.baseUrl; // Use central API config
+  final String _baseUrl = ApiConfig.baseUrl;
   final List<Meal> _meals = [];
-  final AuthService _authService = AuthService();
+  final HttpClient _httpClient = HttpClient();
 
   List<Meal> get meals => _meals;
 
-  Future<Map<String, String>> _getHeaders() async {
-    String? token = await _authService.getToken();
-    return {
-      'Content-Type': 'application/json',
-      'x-access-token': token ?? '',
-    };
-  }
-
   Future<void> fetchMeals() async {
     try {
-      final response = await http.get(
+      final response = await _httpClient.get(
         Uri.parse('$_baseUrl/meals'),
-        headers: await _getHeaders(),
       );
       if (response.statusCode == 200) {
         Iterable l = json.decode(response.body);
@@ -36,15 +26,13 @@ class MealService extends ChangeNotifier {
       }
     } catch (e) {
       print('Error fetching meals: $e');
-      // Handle error
     }
   }
 
   Future<void> addMeal(Meal meal) async {
     try {
-      final response = await http.post(
+      final response = await _httpClient.post(
         Uri.parse('$_baseUrl/meals'),
-        headers: await _getHeaders(),
         body: json.encode(meal.toJson()),
       );
       if (response.statusCode == 201) {
@@ -65,9 +53,8 @@ class MealService extends ChangeNotifier {
       return;
     }
     try {
-      final response = await http.put(
+      final response = await _httpClient.put(
         Uri.parse('$_baseUrl/meals/${meal.id}'),
-        headers: await _getHeaders(),
         body: json.encode(meal.toJson()),
       );
       if (response.statusCode == 200) {
@@ -86,9 +73,8 @@ class MealService extends ChangeNotifier {
 
   Future<void> removeMeal(int id) async {
     try {
-      final response = await http.delete(
+      final response = await _httpClient.delete(
         Uri.parse('$_baseUrl/meals/$id'),
-        headers: await _getHeaders(),
       );
       if (response.statusCode == 200) {
         _meals.removeWhere((meal) => meal.id == id);
@@ -105,6 +91,4 @@ class MealService extends ChangeNotifier {
     if (meal.id == null) return;
     await removeMeal(meal.id!);
   }
-
-  // TODO: Add methods for updating meals, filtering by date, etc.
 }

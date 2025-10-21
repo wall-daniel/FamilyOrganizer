@@ -1,30 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:family_organizer/models/task.dart';
-import 'package:family_organizer/common/api_config.dart'; // Import ApiConfig
-import 'package:family_organizer/services/auth_service.dart';
+import 'package:family_organizer/common/api_config.dart';
+import 'package:family_organizer/common/http_client.dart';
 
 class TaskService extends ChangeNotifier {
-  final String _baseUrl = ApiConfig.baseUrl; // Use central API config
+  final String _baseUrl = ApiConfig.baseUrl;
   final List<Task> _tasks = [];
-  final AuthService _authService = AuthService();
+  final HttpClient _httpClient = HttpClient();
 
   List<Task> get tasks => _tasks;
 
-  Future<Map<String, String>> _getHeaders() async {
-    String? token = await _authService.getToken();
-    return {
-      'Content-Type': 'application/json',
-      'x-access-token': token ?? '',
-    };
-  }
-
   Future<void> fetchTasks() async {
     try {
-      final response = await http.get(
+      final response = await _httpClient.get(
         Uri.parse('$_baseUrl/tasks'),
-        headers: await _getHeaders(),
       );
       if (response.statusCode == 200) {
         Iterable l = json.decode(response.body);
@@ -36,15 +26,13 @@ class TaskService extends ChangeNotifier {
       }
     } catch (e) {
       print('Error fetching tasks: $e');
-      // Handle error
     }
   }
 
   Future<void> addTask(Task task) async {
     try {
-      final response = await http.post(
+      final response = await _httpClient.post(
         Uri.parse('$_baseUrl/tasks'),
-        headers: await _getHeaders(),
         body: json.encode(task.toJson()),
       );
       if (response.statusCode == 201) {
@@ -65,9 +53,8 @@ class TaskService extends ChangeNotifier {
       return;
     }
     try {
-      final response = await http.put(
+      final response = await _httpClient.put(
         Uri.parse('$_baseUrl/tasks/${task.id}'),
-        headers: await _getHeaders(),
         body: json.encode(task.toJson()),
       );
       if (response.statusCode == 200) {
@@ -86,9 +73,8 @@ class TaskService extends ChangeNotifier {
 
   Future<void> removeTask(int id) async {
     try {
-      final response = await http.delete(
+      final response = await _httpClient.delete(
         Uri.parse('$_baseUrl/tasks/$id'),
-        headers: await _getHeaders(),
       );
       if (response.statusCode == 200) {
         _tasks.removeWhere((task) => task.id == id);
@@ -100,6 +86,4 @@ class TaskService extends ChangeNotifier {
       print('Error removing task: $e');
     }
   }
-
-  // TODO: Add more methods for updating tasks, marking as complete, etc.
 }
