@@ -1,7 +1,8 @@
 from flask import Flask
-from database import init_app
+from database import init_app, db
 from routes import bp as api_bp
-from flask_cors import CORS  # Add this import
+from flask_cors import CORS
+from flask_migrate import Migrate
 
 def create_app():
     app = Flask(__name__)
@@ -10,6 +11,7 @@ def create_app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     init_app(app)
+    migrate = Migrate(app, db, directory='backend/migrations')
     app.register_blueprint(api_bp)
     CORS(app, resources={r"/api/*": {"origins": "*"}})  # Enable CORS for all /api routes
 

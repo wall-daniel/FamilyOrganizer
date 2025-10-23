@@ -6,3 +6,5 @@ Flask-SQLAlchemy==2.5.1
 SQLAlchemy==1.4.46
 marshmallow-sqlalchemy==0.28.0
 flask-marshmallow==0.14.0
+Flask-Migrate==4.0.7
+alembic==1.13.1

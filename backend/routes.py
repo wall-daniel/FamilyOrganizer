@@ -103,8 +103,10 @@ def add_task():
         title=new_task_data['title'],
         description=new_task_data.get('description', ''),
         completed=new_task_data.get('completed', False),
+        due_date=datetime.datetime.fromisoformat(new_task_data['due_date']) if new_task_data.get('due_date') else None,
         family_id=g.current_user.family_id,
-        user_id=g.current_user.id
+        author_id=g.current_user.id,
+        assigned_user_id=new_task_data.get('assigned_user_id')
     )
     db.session.add(task)
     db.session.commit()
@@ -134,6 +136,10 @@ def update_task(task_id):
         task.description = updated_data['description']
     if 'completed' in updated_data:
         task.completed = updated_data['completed']
+    if 'due_date' in updated_data:
+        task.due_date = datetime.datetime.fromisoformat(updated_data['due_date']) if updated_data.get('due_date') else None
+    if 'assigned_user_id' in updated_data:
+        task.assigned_user_id = updated_data['assigned_user_id']
     
     db.session.commit()
     return jsonify(task.to_dict())

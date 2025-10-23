@@ -27,7 +27,8 @@ class User(db.Model):
     email = db.Column(db.String(120), nullable=False)
     is_accepted = db.Column(db.Boolean, default=False, nullable=False)
     family_id = db.Column(db.Integer, db.ForeignKey('families.id'), nullable=False)
-    tasks = db.relationship('Task', backref='user', lazy=True)
+    authored_tasks = db.relationship('Task', backref='author', lazy=True, foreign_keys='Task.author_id')
+    assigned_tasks = db.relationship('Task', backref='assigned_user', lazy=True, foreign_keys='Task.assigned_user_id')
     thoughts = db.relationship('Thought', backref='user', lazy=True)
 
     def set_password(self, password):
@@ -45,14 +46,18 @@ class User(db.Model):
             'family_id': self.family_id
         }
 
+USER_ID_FOREIGN_KEY = 'users.id'
+
 class Task(db.Model):
     __tablename__ = 'tasks'
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=True)
     completed = db.Column(db.Boolean, default=False, nullable=False)
+    due_date = db.Column(db.DateTime, nullable=True)
     family_id = db.Column(db.Integer, db.ForeignKey('families.id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    author_id = db.Column(db.Integer, db.ForeignKey(USER_ID_FOREIGN_KEY), nullable=False)
+    assigned_user_id = db.Column(db.Integer, db.ForeignKey(USER_ID_FOREIGN_KEY), nullable=True)
 
     def to_dict(self):
         return {
@@ -60,8 +65,11 @@ class Task(db.Model):
             'title': self.title,
             'description': self.description,
             'completed': self.completed,
+            'due_date': self.due_date.isoformat() if self.due_date else None,
             'family_id': self.family_id,
-            'user_id': self.user_id
+            'author_id': self.author_id,
+            'assigned_user_id': self.assigned_user_id,
+            'assigned_user': self.assigned_user.to_dict() if self.assigned_user else None
         }
 
 class GroceryItem(db.Model):
@@ -140,7 +148,7 @@ class Thought(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, server_default=db.func.now())
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey(USER_ID_FOREIGN_KEY), nullable=False)
     family_id = db.Column(db.Integer, db.ForeignKey('families.id'), nullable=False)
 
     def to_dict(self):
