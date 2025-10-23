@@ -13,11 +13,11 @@ COPY . /app
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Make the entrypoint script executable
+RUN chmod +x /app/entrypoint.sh
+
 # Expose port 8080 for the application
 EXPOSE 8080
 
-# Run the application using Gunicorn
-# Gunicorn is a WSGI HTTP Server for UNIX. It's a pre-fork worker model.
-# The --bind 0.0.0.0:8080 makes it listen on all network interfaces on port 8080.
-# The app:create_app specifies the callable 'create_app' inside 'app.py'
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--log-level", "debug", "wsgi:app"]
+# Set the entrypoint script
+ENTRYPOINT ["/app/entrypoint.sh"]
