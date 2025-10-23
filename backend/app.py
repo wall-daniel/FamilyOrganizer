@@ -11,7 +11,7 @@ def create_app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     init_app(app)
-    migrate = Migrate(app, db, directory='backend/migrations')
+    migrate = Migrate(app, db, directory='/app/backend/migrations')
     app.register_blueprint(api_bp)
     CORS(app, resources={r"/api/*": {"origins": "*"}})  # Enable CORS for all /api routes
 
