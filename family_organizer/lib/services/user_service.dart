@@ -6,15 +6,17 @@ import 'package:family_organizer/common/http_client.dart';
 class UserService {
   final String _baseUrl = ApiConfig.baseUrl;
   final HttpClient _httpClient = HttpClient();
+  List<User> _users = [];
+  List<User> get users => _users;
 
-  Future<List<User>> getFamilyUsers(String token) async {
+  Future<void> fetchFamilyUsers() async {
     final response = await _httpClient.get(
       Uri.parse('$_baseUrl/family/users'),
     );
 
     if (response.statusCode == 200) {
       Iterable l = json.decode(response.body);
-      return List<User>.from(l.map((model) => User.fromJson(model)));
+      _users = List<User>.from(l.map((model) => User.fromJson(model)));
     } else {
       throw Exception('Failed to load family users: ${response.body}');
     }
